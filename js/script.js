@@ -1,5 +1,5 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let scene;
 let camera;
@@ -9,6 +9,17 @@ let linkModel;
 
 const canvas = document.getElementById("chainCanvas");
 const statusMessage = document.getElementById("statusMessage");
+
+window.addEventListener("error", (event) => {
+    const message = event.error?.message || event.message || "Unknown runtime error";
+    console.error("Runtime error", event.error || event);
+    setStatus(`Runtime error: ${message}`);
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+    console.error("Unhandled promise rejection", event.reason);
+    setStatus(`Unhandled error: ${event.reason?.message || event.reason || "Unknown promise rejection"}`);
+});
 
 init();
 loadChainLink();
