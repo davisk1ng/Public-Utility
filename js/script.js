@@ -22,6 +22,12 @@ function init() {
     const ambient = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambient);
 
+    const testGeo = new THREE.BoxGeometry(1, 1, 1);
+const testMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+const testCube = new THREE.Mesh(testGeo, testMat);
+scene.add(testCube);
+
+
     animate();
     
 }
