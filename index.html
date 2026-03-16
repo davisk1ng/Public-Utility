@@ -7,9 +7,37 @@
 </head>
 <body>
 
-    <button id="addLink">Add Link</button>
+    <button id="addEcho">Add Echo</button>
     <button id="removeLink">Remove Link</button>
     <div id="statusMessage">Loading chain model...</div>
+
+    <!-- Echo Labels Container -->
+    <div id="echoLabelsContainer"></div>
+
+    <!-- Echo Modal -->
+    <div id="echoModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-field">
+                <label for="titleInput">Title:</label>
+                <input type="text" id="titleInput" placeholder="Enter title">
+            </div>
+            <div class="modal-field">
+                <label for="descriptionInput">Description:</label>
+                <input type="text" id="descriptionInput" placeholder="Enter description">
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmEcho">Add Echo</button>
+                <button id="cancelEcho">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Card Modal -->
+    <div id="heroCardOverlay" class="overlay hidden"></div>
+    <div id="heroCard" class="hero-card hidden">
+        <div id="heroCardContent"></div>
+        <button id="closeHeroCard" class="close-button">Close</button>
+    </div>
 
     <canvas id="chainCanvas"></canvas>
 

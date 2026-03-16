@@ -6,6 +6,7 @@ let scene;
 let camera;
 let renderer;
 let chainLinks = [];
+let echoes = [];
 let linkModel;
 let linkSpacing = 0.75;
 let linkHalfHeight = 0.4;
@@ -208,6 +209,12 @@ function addLink() {
     setStatus(`Chain links: ${chainLinks.length}`);
 }
 
+function addEchoWithData(title, description) {
+    addLink();
+    echoes.push({ title, description, index: chainLinks.length - 1 });
+    renderEchoLabels();
+}
+
 function removeLink() {
     if (chainLinks.length === 0) {
         return;
@@ -215,6 +222,13 @@ function removeLink() {
 
     const lastLink = chainLinks.pop();
     scene.remove(lastLink);
+    
+    // Remove corresponding echo if it exists
+    if (echoes.length > 0) {
+        echoes.pop();
+        renderEchoLabels();
+    }
+    
     chainInteraction.rebuildFromLinks();
     chainInteraction.applyToLinks();
     updateZoomLimits();
@@ -223,7 +237,16 @@ function removeLink() {
 }
 
 function setStatus(message) {
-    statusMessage.textContent = message;
+    if (message.startsWith("Chain links: ")) {
+        const number = message.replace("Chain links: ", "");
+        statusMessage.innerHTML = `<span style="font-size: 14px;">Chain links: </span><span style="font-size: 24px;">${number}</span>`;
+        statusMessage.style.display = "flex";
+        statusMessage.style.alignItems = "center";
+        statusMessage.style.gap = "4px";
+    } else {
+        statusMessage.textContent = message;
+        statusMessage.style.display = "block";
+    }
 }
 
 function onWindowResize() {
@@ -232,11 +255,126 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-document.getElementById("addLink").onclick = addLink;
+document.getElementById("addEcho").onclick = openEchoModal;
 document.getElementById("removeLink").onclick = removeLink;
+
+// Echo Modal Functions
+function openEchoModal() {
+    const modal = document.getElementById("echoModal");
+    modal.classList.remove("hidden");
+}
+
+function closeEchoModal() {
+    const modal = document.getElementById("echoModal");
+    modal.classList.add("hidden");
+}
+
+document.getElementById("confirmEcho").onclick = () => {
+    const title = document.getElementById("titleInput").value;
+    const description = document.getElementById("descriptionInput").value;
+    
+    if (title.trim() || description.trim()) {
+        addEchoWithData(title, description);
+        
+        // Clear the inputs
+        document.getElementById("titleInput").value = "";
+        document.getElementById("descriptionInput").value = "";
+        
+        // Close the modal
+        closeEchoModal();
+    }
+};
+
+document.getElementById("cancelEcho").onclick = closeEchoModal;
+
+// Echo Label and Hero Card Functions
+function openHeroCard(echoIndex) {
+    console.log("Opening hero card for echo:", echoIndex, echoes[echoIndex]);
+    const echo = echoes[echoIndex];
+    if (!echo) {
+        console.error("Echo not found at index:", echoIndex);
+        return;
+    }
+    const heroCardContent = document.getElementById("heroCardContent");
+    heroCardContent.innerHTML = `
+        <h2>${echo.title || "Echo"}</h2>
+        <p>${echo.description || ""}</p>
+    `;
+    
+    const overlay = document.getElementById("heroCardOverlay");
+    const card = document.getElementById("heroCard");
+    console.log("Overlay element:", overlay);
+    console.log("Card element:", card);
+    
+    overlay.classList.remove("hidden");
+    card.classList.remove("hidden");
+    console.log("Hero card should now be visible");
+}
+
+function closeHeroCard() {
+    document.getElementById("heroCardOverlay").classList.add("hidden");
+    document.getElementById("heroCard").classList.add("hidden");
+}
+
+function renderEchoLabels() {
+    const container = document.getElementById("echoLabelsContainer");
+    container.innerHTML = "";
+    
+    echoes.forEach((echo, echoIndex) => {
+        const label = document.createElement("div");
+        label.className = "echo-label";
+        label.textContent = echo.title || "Echo";
+        label.style.cursor = "pointer";
+        label.onclick = (e) => {
+            console.log("Label clicked for echo index:", echoIndex);
+            e.stopPropagation();
+            openHeroCard(echoIndex);
+        };
+        
+        // Get the chain link's world position
+        const linkIndex = echo.index;
+        const linkWorldPos = new THREE.Vector3();
+        if (chainLinks[linkIndex]) {
+            chainLinks[linkIndex].getWorldPosition(linkWorldPos);
+        }
+        
+        // Project 3D world position to 2D screen coordinates
+        const screenPos = new THREE.Vector3();
+        screenPos.copy(linkWorldPos);
+        screenPos.project(camera);
+        
+        // Convert normalized device coordinates to screen pixels
+        const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+        
+        // Position label slightly to the right of the chain
+        label.style.left = (x + 20) + "px";
+        label.style.top = (y - 15) + "px";
+        label.style.transform = "translate(0, -50%)";
+        
+        container.appendChild(label);
+    });
+}
+
+// Setup hero card event listeners with a small delay to ensure DOM is ready
+const setupHeroCardListeners = () => {
+    const closeBtn = document.getElementById("closeHeroCard");
+    const overlay = document.getElementById("heroCardOverlay");
+    if (closeBtn) {
+        closeBtn.onclick = closeHeroCard;
+    }
+    if (overlay) {
+        overlay.onclick = closeHeroCard;
+    }
+};
+
+// Try to setup immediately, then again after a tiny delay
+setupHeroCardListeners();
+setTimeout(setupHeroCardListeners, 100);
 
 function animate() {
     requestAnimationFrame(animate);
     chainInteraction.update();
     renderer.render(scene, camera);
+    renderEchoLabels();
 }
