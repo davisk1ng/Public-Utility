@@ -2,8 +2,36 @@ body {
     margin: 0;
     overflow: hidden;
     background: #ffffff;
-    font-family: 'courier new', monospace;
-    font-weight: 550;
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    -webkit-text-size-adjust: 100%;
+}
+
+#splashScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.7s ease;
+}
+
+#splashScreen.is-hiding {
+    opacity: 0;
+}
+
+#splashScreen.hidden {
+    display: none;
+}
+
+#splashIcon {
+    width: min(180px, 36vw);
+    height: min(180px, 36vw);
+    object-fit: contain;
 }
 
 button {
@@ -18,8 +46,9 @@ button {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.15s ease, box-shadow 0.15s ease;
-     font-family: 'courier new', monospace;
-     font-weight: 550;
+    font-family: "proxima-nova", sans-serif;
+    font-weight: 700;
+    font-style: normal;
 }
 
 button:hover,
@@ -32,10 +61,8 @@ button:hover,
 button:focus-visible,
 .modal-buttons button:focus-visible,
 .close-button:focus-visible,
-.echo-label:focus-visible,
 #zoomSlider:focus-visible,
-.modal-field input:focus-visible,
-.modal-field textarea:focus-visible {
+.modal-field input:focus-visible {
     outline: none;
     box-shadow: 0 0 0 1.5px #000000;
 }
@@ -43,18 +70,25 @@ button:focus-visible,
 /* Settings button — top left */
 #settingsBtn {
     position: fixed;
-    top: 30px;
-    left: 70px;
+    top: calc(env(safe-area-inset-top, 0px) + 30px);
+    left: calc(env(safe-area-inset-left, 0px) + 70px);
     bottom: auto;
     z-index: 1005;
     font-size: 19px;
-    width: auto;
+    width: 76px;
+    height: 76px;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
 }
 
 #settingsBtnIcon {
     display: block;
-    height: 40px;
-    width: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 /* Settings screen */
@@ -69,7 +103,10 @@ button:focus-visible,
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 48px;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 48px);
+    padding-left: calc(env(safe-area-inset-left, 0px) + 24px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 24px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
     box-sizing: border-box;
     opacity: 1;
     transition: opacity 0.5s ease;
@@ -92,6 +129,8 @@ button:focus-visible,
     font-weight: 600;
     color: #111;
     letter-spacing: 0.04em;
+    font-family: "proxima-nova", sans-serif;
+    font-style: normal;
 }
 
 #settingsDivider {
@@ -117,8 +156,8 @@ button:focus-visible,
 
 #uiControls {
     position: fixed;
-    left: 30px;
-    bottom: 30px;
+    left: calc(env(safe-area-inset-left, 0px) + 20px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
     z-index: 3;
     display: flex;
     flex-direction: column;
@@ -132,19 +171,37 @@ button:focus-visible,
     font-size: 19px;
 }
 
+#removeTagBtn {
+    position: fixed;
+    left: calc(env(safe-area-inset-left, 0px) + 20px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
+    z-index: 1012;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+    pointer-events: auto;
+}
+
+#removeTagBtn.hidden {
+    display: none;
+}
+
 #addEcho {
     display: flex;
     padding: 8px;
-    width: 90px;
+    width: 76px;
+    height: 76px;
     line-height: 0;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
 
 #addEchoIcon {
     display: block;
-    height: 40px;
-    width: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 #zoomControl {
@@ -161,6 +218,9 @@ button:focus-visible,
     color: #111;
     margin-bottom: 8px;
     text-align: center;
+    font-family: "proxima-nova", sans-serif;
+    font-weight: 700;
+    font-style: normal;
 }
 
 #zoomRow {
@@ -174,6 +234,9 @@ button:focus-visible,
     width: 14px;
     text-align: center;
     color: #111;
+    font-family: "proxima-nova", sans-serif;
+    font-weight: 700;
+    font-style: normal;
 }
 
 #zoomSlider {
@@ -207,20 +270,29 @@ button:focus-visible,
 
 #statusMessage {
     position: absolute;
-    top: 30px;
-    right: 30px;
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    right: calc(env(safe-area-inset-right, 0px) + 20px);
     z-index: 2;
     padding: 10px 14px;
     background: transparent;
     border: none;
     color: #111;
-    font-size: 29px;
+    font-size: clamp(20px, 3.6vw, 29px);
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    max-width: min(60vw, 320px);
+    text-align: right;
 }
 
 canvas {
     width: 100vw;
     height: 100vh;
     display: block;
+}
+
+#chainCanvas {
+    touch-action: none;
 }
 
 /* Modal Styles */
@@ -246,8 +318,12 @@ canvas {
     border: 2px solid #000000;
     border-radius: 7px;
     padding: 24px;
-    width: 360px;
+    width: min(360px, calc(100vw - 32px));
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    box-sizing: border-box;
 }
 
 .modal-field {
@@ -260,6 +336,9 @@ canvas {
     font-size: 17px;
     margin-bottom: 6px;
     color: #111;
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
 }
 
 .modal-field input {
@@ -267,6 +346,34 @@ canvas {
     border: 1px solid #000000;
     border-radius: 5px;
     font-size: 17px;
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input-with-count {
+    position: relative;
+    width: 100%;
+}
+
+#titleCharCount {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: right;
+    color: #8a8a8a;
+    font-family: "proxima-nova", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+#titleInput {
+    padding-right: 56px;
 }
 
 .modal-field textarea {
@@ -276,15 +383,17 @@ canvas {
     font-size: 17px;
     min-height: 140px;
     resize: vertical;
-    font-family: inherit;
+    font-family: "courier-new", sans-serif;
+    font-weight: 400;
+    font-style: normal;
     line-height: 1.4;
 }
 
 .modal-buttons {
     display: flex;
     gap: 12px;
-    justify-content: flex-end;
-    margin-top: 24px;
+    justify-content: flex-start;
+    margin-top: 18px;
 }
 
 .modal-buttons button {
@@ -296,35 +405,6 @@ canvas {
     border-radius: 5px;
     cursor: pointer;
     font-size: 17px;
-}
-
-/* Echo Labels */
-#echoLabelsContainer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 1;
-}
-
-.echo-label {
-    position: fixed;
-    cursor: pointer;
-    padding: 10px 15px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 2px solid #000000;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    white-space: nowrap;
-    pointer-events: auto;
-    transition: background 0.2s;
-}
-
-.echo-label:hover {
-    background: rgba(255, 255, 255, 1);
 }
 
 /* Overlay for Hero Card */
@@ -354,50 +434,43 @@ canvas {
     pointer-events: none;
 }
 
-/* Hero Card */
-.hero-card {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #ffffff;
-    border: 2px solid #000000;
-    border-radius: 7px;
-    padding: 29px;
-    max-width: 816px;
-    width: min(816px, 92vw);
-    max-height: 86vh;
-    overflow: hidden;
-    z-index: 1002;
-    display: flex;
-    flex-direction: column;
-    gap: 19px;
+/* Hero preview overlay sits above the settings button */
+#heroPreviewOverlay {
+    z-index: 1009;
 }
 
-.hero-card.hidden {
+/* Dog tag preview stage — transparent full-viewport canvas, no window chrome */
+.hero-preview-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 1010;
+    background: transparent;
+}
+
+.hero-preview-stage.hidden {
     display: none;
 }
 
-#heroCardContent {
-    flex-grow: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px;
+#heroPreviewCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
 }
 
-#heroCardContent h2 {
-    margin: 0 0 18px 0;
-    font-size: 29px;
-    color: #111;
-}
-
-#heroCardContent p {
-    margin: 0;
-    font-size: 22px;
-    color: #333;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+.hero-preview-close {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    right: calc(env(safe-area-inset-right, 0px) + 18px);
+    left: auto;
+    bottom: auto;
+    z-index: 1011;
+    background: rgba(255, 255, 255, 0.92);
+    width: auto;
+    padding: 14px 24px;
 }
 
 .close-button {
@@ -410,4 +483,225 @@ canvas {
     cursor: pointer;
     font-size: 19px;
     width: 100%;
+}
+
+@media (max-width: 600px) {
+    button {
+        min-height: 48px;
+    }
+
+    #settingsBtn {
+        width: 64px;
+        height: 64px;
+        padding: 7px;
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
+    }
+
+    #settingsBtnIcon,
+    #addEchoIcon {
+        width: 100%;
+        height: 100%;
+    }
+
+    #uiControls {
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
+        right: calc(env(safe-area-inset-right, 0px) + 12px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 24px);
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        align-items: end;
+        gap: 12px;
+        box-sizing: border-box;
+    }
+
+    #removeTagBtn {
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+        font-size: 13px;
+        padding: 8px 12px;
+        min-height: 40px;
+    }
+
+    #uiControls button {
+        font-size: 16px;
+    }
+
+    #addEcho {
+        width: 64px;
+        height: auto;
+        min-width: 64px;
+        min-height: 64px;
+        padding: 7px;
+    }
+
+    #zoomControl {
+        align-items: flex-start;
+        flex: 1;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 2px solid #000000;
+        border-radius: 10px;
+        box-sizing: border-box;
+    }
+
+    #zoomLabel {
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+
+    #zoomRow {
+        width: 100%;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .zoomSign {
+        font-size: 18px;
+        width: 18px;
+    }
+
+    #zoomSlider {
+        display: block;
+        flex: 1;
+        width: auto;
+        min-width: 0;
+        height: 22px;
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+        width: 22px;
+        height: 22px;
+    }
+
+    #zoomSlider::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+    }
+
+    #statusMessage {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
+        right: calc(env(safe-area-inset-right, 0px) + 12px);
+        max-width: none;
+        font-size: 18px;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    #settingsBody {
+        width: min(100%, 320px);
+    }
+
+    #settingsBody button {
+        width: 100%;
+    }
+
+    .modal-content {
+        padding: 18px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+        justify-content: stretch;
+    }
+
+    .modal-buttons button {
+        width: 100%;
+    }
+
+    .hero-preview-close {
+        padding: 12px 18px;
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 400px) {
+    #uiControls {
+        grid-template-columns: 60px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    #addEcho {
+        width: 60px;
+        min-width: 60px;
+        min-height: 60px;
+    }
+
+    #zoomControl {
+        padding: 8px 10px;
+    }
+
+    #zoomRow {
+        gap: 8px;
+    }
+
+    .zoomSign {
+        width: 14px;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    #uiControls {
+        left: calc(env(safe-area-inset-left, 0px) + 16px);
+        right: calc(env(safe-area-inset-right, 0px) + 16px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 14px;
+    }
+
+    #removeTagBtn {
+        left: calc(env(safe-area-inset-left, 0px) + 16px);
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    }
+
+    #addEcho {
+        width: 68px;
+        height: 68px;
+        min-width: 68px;
+        min-height: 68px;
+        padding: 7px;
+    }
+
+    #zoomControl {
+        align-items: flex-start;
+        flex: 0 0 auto;
+        width: min(300px, 52vw);
+        max-width: 320px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 2px solid #000000;
+        border-radius: 10px;
+    }
+
+    #zoomRow {
+        width: 100%;
+    }
+
+    #zoomSlider {
+        flex: 1;
+        width: auto;
+        height: 20px;
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+        width: 20px;
+        height: 20px;
+    }
+
+    #zoomSlider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+    }
+
+    #statusMessage {
+        top: calc(env(safe-area-inset-top, 0px) + 14px);
+        right: calc(env(safe-area-inset-right, 0px) + 14px);
+        font-size: 22px;
+    }
 }

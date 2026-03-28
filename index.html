@@ -2,10 +2,17 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>3D Chain</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Hyperlink
+    </title>
+    <link rel="stylesheet" href="https://use.typekit.net/csj6fho.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+
+    <div id="splashScreen" aria-label="Loading screen">
+        <img id="splashIcon" src="assets/Chain Icon.png" alt="Loading">
+    </div>
 
     <button id="settingsBtn" aria-label="Settings">
         <img id="settingsBtnIcon" src="assets/Gear Icon.png" alt="Settings">
@@ -25,7 +32,7 @@
 
     <div id="uiControls">
         <button id="addEcho" aria-label="Add Echo">
-            <img id="addEchoIcon" src="assets/Echo Icon.png" alt="Add Echo">
+            <img id="addEchoIcon" src="assets/Chain Icon.png" alt="Add Echo">
         </button>
         <div id="zoomControl">
             <div id="zoomLabel">Zoom</div>
@@ -36,34 +43,31 @@
             </div>
         </div>
     </div>
+    <button id="removeTagBtn" class="hidden" aria-label="Remove selected dog tag">Remove Tag</button>
     <div id="statusMessage">Loading chain model...</div>
 
-    <!-- Echo Labels Container -->
-    <div id="echoLabelsContainer"></div>
-
-    <!-- Echo Model -->
+    <!-- Dog Tag Modal -->
     <div id="echoModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-field">
-                <label for="titleInput">Title:</label>
-                <input type="text" id="titleInput" placeholder="Enter title">
-            </div>
-            <div class="modal-field">
-                <label for="descriptionInput">Description:</label>
-                <textarea id="descriptionInput" placeholder="Enter description"></textarea>
+                <label for="titleInput">How did you self improve?</label>
+                <div class="input-with-count">
+                    <input type="text" id="titleInput" placeholder="Enter title" maxlength="40">
+                    <span id="titleCharCount" aria-live="polite">0/40</span>
+                </div>
             </div>
             <div class="modal-buttons">
-                <button id="confirmEcho">Add Echo</button>
+                <button id="confirmEcho">Add link</button>
                 <button id="cancelEcho">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Hero Card Modal -->
-    <div id="heroCardOverlay" class="overlay hidden"></div>
-    <div id="heroCard" class="hero-card hidden">
-        <div id="heroCardContent"></div>
-        <button id="closeHeroCard" class="close-button">Close</button>
+    <!-- Dog Tag Preview -->
+    <div id="heroPreviewOverlay" class="overlay hidden"></div>
+    <div id="heroPreviewStage" class="hero-preview-stage hidden">
+        <canvas id="heroPreviewCanvas" aria-label="Dog tag preview"></canvas>
+        <button id="closeHeroPreview" class="close-button hero-preview-close">Back</button>
     </div>
 
     <canvas id="chainCanvas"></canvas>

@@ -17,12 +17,14 @@ export class ChainInteraction {
         this.dragPoint = new THREE.Vector3();
 
         this.draggingIndex = -1;
+        this.activePointerId = null;
         this.lastDragPosition = new THREE.Vector3();
         this.lastDragTime = 0;
 
         this.constraintIterations = 8;
-        this.motionDamping = 0.9;
-        this.gravityStrength = 0.002;
+        this.motionDamping = 0.94;
+        // Positive Y here is intentionally opposite earth gravity for this effect.
+        this.gravityStrength = 0.01;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -30,9 +32,12 @@ export class ChainInteraction {
     }
 
     attach() {
+        // Prevent browser touch gestures (scroll/pinch) from stealing chain drag input.
+        this.canvas.style.touchAction = "none";
         this.canvas.addEventListener("pointerdown", this.onPointerDown);
         window.addEventListener("pointermove", this.onPointerMove);
         window.addEventListener("pointerup", this.onPointerUp);
+        window.addEventListener("pointercancel", this.onPointerUp);
     }
 
     rebuildFromLinks() {
@@ -97,6 +102,10 @@ export class ChainInteraction {
     }
 
     onPointerDown(event) {
+        if (this.activePointerId !== null) {
+            return;
+        }
+
         const chainLinks = this.getChainLinks();
 
         if (chainLinks.length < 3 || this.chainPoints.length !== chainLinks.length) {
@@ -125,13 +134,31 @@ export class ChainInteraction {
         }
 
         this.draggingIndex = linkIndex;
+        this.activePointerId = event.pointerId;
         this.lastDragTime = performance.now();
         this.lastDragPosition.copy(this.chainPoints[this.draggingIndex]);
+
+        if (event.cancelable) {
+            event.preventDefault();
+        }
+
+        if (typeof this.canvas.setPointerCapture === "function") {
+            try {
+                this.canvas.setPointerCapture(event.pointerId);
+            } catch {
+                // Ignore capture errors and continue dragging when possible.
+            }
+        }
+
         this.canvas.style.cursor = "grabbing";
     }
 
     onPointerMove(event) {
         if (this.draggingIndex < 0) {
+            return;
+        }
+
+        if (this.activePointerId !== null && event.pointerId !== this.activePointerId) {
             return;
         }
 
@@ -186,8 +213,21 @@ export class ChainInteraction {
         return clampedPoint;
     }
 
-    onPointerUp() {
+    onPointerUp(event) {
+        if (this.activePointerId !== null && event?.pointerId !== this.activePointerId) {
+            return;
+        }
+
+        if (typeof this.canvas.releasePointerCapture === "function" && this.activePointerId !== null) {
+            try {
+                this.canvas.releasePointerCapture(this.activePointerId);
+            } catch {
+                // Ignore capture release errors.
+            }
+        }
+
         this.draggingIndex = -1;
+        this.activePointerId = null;
         this.canvas.style.cursor = "default";
     }
 

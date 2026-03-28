@@ -1,12 +1,14 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { FontLoader } from "three/addons/loaders/FontLoader.js";
 import { ChainInteraction } from "./chainInteraction.js";
+import { DogTagManager } from "./dogTagManager.js";
 
 let scene;
 let camera;
 let renderer;
 let chainLinks = [];
-let echoes = [];
 let linkModel;
 let linkSpacing = 0.75;
 let linkHalfHeight = 0.4;
@@ -15,13 +17,34 @@ let cameraMaxY = 1;
 let zoomMinZ = 4;
 let zoomMaxZ = 20;
 let chainInteraction;
+let dogTagManager;
+let selectedTagId = null;
+let isRestoring = false;
+let heroPreviewRenderer = null;
+let heroPreviewScene = null;
+let heroPreviewCamera = null;
+let heroPreviewRoot = null;
+let heroPreviewBackLabel = null;
+let heroPreviewFrontLabels = [];
+let heroFlipAngle = 0;
+let heroFlipTarget = 0;
+let heroFlipRafId = null;
 
+const tagTextLodDistance = 3.2;
 const scrollSensitivity = 0.01;
+const chainModelUrl = `assets/Chain.glb?cacheBust=${Date.now()}`;
+const dogTagModelUrl = `assets/DogTag.glb?cacheBust=${Date.now()}`;
+const fontUrl = "https://unpkg.com/three@0.152.2/examples/fonts/droid/droid_sans_mono_regular.typeface.json";
+
+const tmpWorld = new THREE.Vector3();
 
 const canvas = document.getElementById("chainCanvas");
 const statusMessage = document.getElementById("statusMessage");
 const zoomSlider = document.getElementById("zoomSlider");
-const chainModelUrl = `assets/Chain.glb?cacheBust=${Date.now()}`;
+const splashScreen = document.getElementById("splashScreen");
+const removeTagBtn = document.getElementById("removeTagBtn");
+const titleInput = document.getElementById("titleInput");
+const titleCharCount = document.getElementById("titleCharCount");
 
 window.addEventListener("error", (event) => {
     const message = event.error?.message || event.message || "Unknown runtime error";
@@ -35,10 +58,19 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 init();
-loadChainLink();
+loadAssets();
 
+function hideSplashScreen() {
+    if (!splashScreen || splashScreen.classList.contains("hidden") || splashScreen.classList.contains("is-hiding")) {
+        return;
+    }
 
-/* Where you can change the scene color, lighting colors, and chain link spacing calculation. */
+    splashScreen.classList.add("is-hiding");
+    window.setTimeout(() => {
+        splashScreen.classList.add("hidden");
+    }, 700);
+}
+
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe7e7e7);
@@ -69,46 +101,118 @@ function init() {
     });
     chainInteraction.attach();
 
+    dogTagManager = new DogTagManager({
+        scene,
+        renderer,
+        getChainLinks: () => chainLinks,
+        getLinkHalfHeight: () => linkHalfHeight,
+    });
+
     window.addEventListener("resize", onWindowResize);
     window.addEventListener("wheel", onMouseWheel, { passive: false });
+    canvas.addEventListener("click", onCanvasClick);
 
     animate();
 }
 
-function loadChainLink() {
-    const loader = new GLTFLoader();
+async function loadAssets() {
+    setStatus("Loading models...");
 
-    loader.load(
-        chainModelUrl,
-        (gltf) => {
-            linkModel = gltf.scene;
-            normalizeModel(linkModel);
-            configureLinkLayout(linkModel);
-            fitCameraToObject(linkModel);
-            setStatus("Chain model loaded.");
-            if (!restoreChain()) {
-                addLink();
-            }
-        },
-        undefined,
-        (error) => {
-            console.error("Failed to load Chain.glb", error);
-            setStatus("Chain model failed to load. Serve this folder through a local web server instead of opening index.html directly.");
+    try {
+        const [chain, dogTag] = await Promise.all([
+            loadModel(chainModelUrl),
+            loadModel(dogTagModelUrl),
+        ]);
+
+        let font = null;
+        try {
+            font = await loadFont(fontUrl);
+        } catch (fontError) {
+            console.warn("Text font failed to load; using canvas-only labels", fontError);
         }
-    );
+
+        linkModel = chain;
+
+        normalizeModel(linkModel, 1.5);
+        configureLinkLayout(linkModel);
+        normalizeModelToHeight(dogTag, linkHalfHeight * 2);
+        dogTagManager.configureDogTagModel(dogTag);
+        dogTagManager.setAssets({ dogTagModel: dogTag, textFont: font });
+        fitCameraToObject(linkModel);
+
+        setStatus(font ? "Chain and dog tag models loaded." : "Chain and dog tag models loaded (font unavailable, using canvas text).");
+
+        if (!restoreChain()) {
+            addLink();
+        }
+
+        hideSplashScreen();
+    } catch (error) {
+        console.error("Failed to load assets", error);
+        const details = error?.message || error?.toString?.() || "Unknown asset error";
+        setStatus(`Failed to load 3D assets: ${details}`);
+        hideSplashScreen();
+    }
 }
 
-function normalizeModel(model) {
+function loadModel(url) {
+    const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
+    loader.setDRACOLoader(dracoLoader);
+
+    return new Promise((resolve, reject) => {
+        loader.load(
+            url,
+            (gltf) => {
+                dracoLoader.dispose();
+                resolve(gltf.scene);
+            },
+            undefined,
+            (error) => {
+                dracoLoader.dispose();
+                reject(error);
+            }
+        );
+    });
+}
+
+function loadFont(url) {
+    const loader = new FontLoader();
+    return new Promise((resolve, reject) => {
+        loader.load(url, (font) => resolve(font), undefined, (error) => reject(error));
+    });
+}
+
+function normalizeModel(model, targetSize) {
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
     const maxDimension = Math.max(size.x, size.y, size.z);
 
-    if (maxDimension > 0) {
-        const scale = 1.5 / maxDimension;
+    if (maxDimension > 0 && targetSize > 0) {
+        const scale = targetSize / maxDimension;
         model.scale.setScalar(scale);
     }
 
+    box.setFromObject(model);
+    box.getCenter(center);
+    model.position.sub(center);
+}
+
+function normalizeModelToHeight(model, targetHeight) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+
+    if (size.y <= 0 || targetHeight <= 0) {
+        normalizeModel(model, Math.max(targetHeight, 0.1));
+        return;
+    }
+
+    const scale = targetHeight / size.y;
+    model.scale.setScalar(scale);
+
+    const center = new THREE.Vector3();
     box.setFromObject(model);
     box.getCenter(center);
     model.position.sub(center);
@@ -171,7 +275,6 @@ function updateCameraVerticalLimits() {
         }
 
         const padding = Math.max(0.08, linkHalfHeight * 0.4);
-
         cameraMaxY = topY + padding;
         cameraMinY = bottomY - padding;
     }
@@ -217,9 +320,7 @@ function addLink() {
         newLink.position.y += linkSpacing;
         chainLinks.unshift(newLink);
 
-        for (const echo of echoes) {
-            echo.index += 1;
-        }
+        dogTagManager.shiftIndices(1);
     }
 
     scene.add(newLink);
@@ -228,14 +329,26 @@ function addLink() {
     updateZoomLimits();
     updateCameraVerticalLimits();
     setStatus(`Chain links: ${chainLinks.length}`);
-    saveChain();
+
+    if (!isRestoring) {
+        saveChain();
+    }
 }
 
-function addEchoWithData(title, description) {
+function addDogTagWithTitle(title) {
+    if (!dogTagManager.hasAssets()) {
+        setStatus("Dog tag assets are still loading.");
+        return;
+    }
+
     addLink();
-    echoes.unshift({ title, description, index: 0 });
-    renderEchoLabels();
-    saveChain();
+
+    dogTagManager.prependTag(title, 0);
+    updateDogTagViewMode();
+
+    if (!isRestoring) {
+        saveChain();
+    }
 }
 
 function removeLink() {
@@ -245,23 +358,24 @@ function removeLink() {
 
     const firstLink = chainLinks.shift();
     scene.remove(firstLink);
-    
-    if (echoes.length > 0) {
-        echoes.shift();
 
-        for (const echo of echoes) {
-            echo.index -= 1;
+    const removedTags = dogTagManager.removeAtIndex(0);
+    for (const removedTag of removedTags) {
+        if (selectedTagId === removedTag.id) {
+            selectedTagId = null;
+            closeHeroCard();
         }
-
-        renderEchoLabels();
     }
-    
+
     chainInteraction.rebuildFromLinks();
     chainInteraction.applyToLinks();
     updateZoomLimits();
     updateCameraVerticalLimits();
     setStatus(`Chain links: ${chainLinks.length}`);
-    saveChain();
+
+    if (!isRestoring) {
+        saveChain();
+    }
 }
 
 function setStatus(message) {
@@ -281,6 +395,7 @@ function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    resizeHeroPreview();
 }
 
 function syncZoomSlider() {
@@ -305,6 +420,7 @@ function applyZoomFromSlider() {
 
     const ratio = Number(zoomSlider.value) / 100;
     camera.position.z = THREE.MathUtils.lerp(zoomMinZ, zoomMaxZ, ratio);
+    updateDogTagViewMode();
 }
 
 if (zoomSlider) {
@@ -313,7 +429,6 @@ if (zoomSlider) {
 
 document.getElementById("addEcho").onclick = openEchoModal;
 
-// Echo Modal Functions
 function openEchoModal() {
     const modal = document.getElementById("echoModal");
     modal.classList.remove("hidden");
@@ -324,111 +439,341 @@ function closeEchoModal() {
     modal.classList.add("hidden");
 }
 
+function syncTitleCharCount() {
+    if (!titleInput || !titleCharCount) {
+        return;
+    }
+    titleCharCount.textContent = `${titleInput.value.length}/40`;
+}
+
+if (titleInput) {
+    titleInput.addEventListener("input", syncTitleCharCount);
+    syncTitleCharCount();
+}
+
 document.getElementById("confirmEcho").onclick = () => {
-    const title = document.getElementById("titleInput").value;
-    const description = document.getElementById("descriptionInput").value;
-    
-    if (title.trim() || description.trim()) {
-        addEchoWithData(title, description);
-        
-        // Clear the inputs
-        document.getElementById("titleInput").value = "";
-        document.getElementById("descriptionInput").value = "";
-        
-        // Close the modal
+    const title = titleInput ? titleInput.value : "";
+
+    if (title.trim()) {
+        addDogTagWithTitle(title);
+        if (titleInput) {
+            titleInput.value = "";
+        }
+        syncTitleCharCount();
         closeEchoModal();
     }
 };
 
 document.getElementById("cancelEcho").onclick = closeEchoModal;
 
-// Echo Label and Hero Card Functions
-function openHeroCard(echoIndex) {
-    const echo = echoes[echoIndex];
-    if (!echo) {
-        return;
-    }
-    const heroCardContent = document.getElementById("heroCardContent");
-    heroCardContent.innerHTML = `
-        <h2>${echo.title || "Echo"}</h2>
-        <p>${echo.description || ""}</p>
-    `;
-    
-    document.getElementById("heroCardOverlay").classList.remove("hidden");
-    document.getElementById("heroCard").classList.remove("hidden");
-}
-
-function closeHeroCard() {
-    document.getElementById("heroCardOverlay").classList.add("hidden");
-    document.getElementById("heroCard").classList.add("hidden");
-}
-
-function renderEchoLabels() {
-    const container = document.getElementById("echoLabelsContainer");
-    container.innerHTML = "";
-    
-    echoes.forEach((echo, echoIndex) => {
-        const label = document.createElement("div");
-        label.className = "echo-label";
-        label.textContent = echo.title || "Echo";
-        label.style.cursor = "pointer";
-        label.dataset.echoIndex = String(echoIndex);
-        label.dataset.linkIndex = String(echo.index);
-        label.onclick = (e) => {
-            e.stopPropagation();
-            openHeroCard(echoIndex);
-        };
-        
-        container.appendChild(label);
-    });
-
-    updateEchoLabelPositions();
-}
-
-function updateEchoLabelPositions() {
-    const labels = document.querySelectorAll(".echo-label");
-    const labelOffset = 20;
-
-    labels.forEach((labelElement) => {
-        const linkIndex = Number(labelElement.dataset.linkIndex);
-        const link = chainLinks[linkIndex];
-        if (!link) {
+if (removeTagBtn) {
+    removeTagBtn.onclick = () => {
+        if (selectedTagId === null) {
             return;
         }
 
-        const linkWorldPos = new THREE.Vector3();
-        link.getWorldPosition(linkWorldPos);
+        const removed = dogTagManager.removeTagById(selectedTagId);
+        if (!removed) {
+            return;
+        }
 
-        const screenPos = linkWorldPos.clone().project(camera);
-        const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+        const removedLink = chainLinks.splice(removed.index, 1)[0];
+        if (removedLink) {
+            scene.remove(removedLink);
+        }
 
-        const isRightSide = linkIndex % 2 === 0;
-        const labelX = isRightSide ? x + labelOffset : x - labelOffset;
+        dogTagManager.refreshAttachments();
+        chainInteraction.rebuildFromLinks();
+        chainInteraction.applyToLinks();
+        updateZoomLimits();
+        updateCameraVerticalLimits();
+        setStatus(`Chain links: ${chainLinks.length}`);
 
-        labelElement.style.left = labelX + "px";
-        labelElement.style.top = (y - 15) + "px";
-        labelElement.style.transform = isRightSide ? "translate(0, -50%)" : "translate(-100%, -50%)";
-    });
+        selectedTagId = null;
+        closeHeroCard();
+        updateDogTagViewMode();
+        saveChain();
+    };
 }
 
-// Setup hero card event listeners with a small delay to ensure DOM is ready
-const setupHeroCardListeners = () => {
-    const closeBtn = document.getElementById("closeHeroCard");
-    const overlay = document.getElementById("heroCardOverlay");
-    if (closeBtn) {
-        closeBtn.onclick = closeHeroCard;
+function onCanvasClick(event) {
+    const tag = dogTagManager.pickTagFromEvent(event, canvas, camera);
+    if (!tag) {
+        selectedTagId = null;
+        closeHeroCard();
+        updateDogTagViewMode();
+        return;
     }
+
+    selectedTagId = tag.id;
+    openHeroCard(tag.id);
+    focusCameraOnTag(tag);
+    updateDogTagViewMode();
+}
+
+function focusCameraOnTag(tag) {
+    tag.root.getWorldPosition(tmpWorld);
+
+    camera.position.y = THREE.MathUtils.clamp(tmpWorld.y, cameraMinY, cameraMaxY);
+    camera.position.z = Math.max(zoomMinZ, zoomMinZ * 1.08);
+    camera.lookAt(0, camera.position.y, 0);
+    syncZoomSlider();
+}
+
+function openHeroCard(tagId) {
+    const tag = dogTagManager.getTagById(tagId);
+    if (!tag) {
+        return;
+    }
+
+    document.getElementById("heroPreviewOverlay").classList.remove("hidden");
+    document.getElementById("heroPreviewStage").classList.remove("hidden");
+
+    initHeroPreview(tag);
+}
+
+function closeHeroCard() {
+    document.getElementById("heroPreviewOverlay").classList.add("hidden");
+    document.getElementById("heroPreviewStage").classList.add("hidden");
+    disposeHeroPreviewRenderer();
+}
+
+function initHeroPreview(tag) {
+    const canvasEl = document.getElementById("heroPreviewCanvas");
+    if (!canvasEl) {
+        return;
+    }
+
+    disposeHeroPreviewRenderer();
+
+    heroPreviewRenderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
+    heroPreviewRenderer.setClearColor(0x000000, 0);
+    heroPreviewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    heroPreviewScene = new THREE.Scene();
+    heroPreviewCamera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(2.2, 2.6, 3.1);
+    heroPreviewScene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    fillLight.position.set(-2, 1.2, 1.4);
+    heroPreviewScene.add(fillLight);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+    heroPreviewScene.add(ambient);
+
+    heroPreviewRoot = tag.root.clone(true);
+    heroPreviewRoot.position.set(0, 0, 0);
+    heroPreviewRoot.rotation.set(0, 0, 0);
+    heroPreviewRoot.scale.setScalar(1);
+    const previewCanvasLabel = heroPreviewRoot.children[1];
+    const previewTextLabel = heroPreviewRoot.children[2];
+
+    if (previewCanvasLabel) {
+        previewCanvasLabel.visible = false;
+    }
+
+    if (previewTextLabel) {
+        previewTextLabel.visible = true;
+    }
+
+    heroPreviewScene.add(heroPreviewRoot);
+
+    // Track the active front label for visibility toggling during flip
+    heroPreviewFrontLabels = [];
+    if (previewTextLabel) {
+        heroPreviewFrontLabels.push(previewTextLabel);
+    }
+
+    // Create back-face date label (hidden until flipped)
+    heroPreviewBackLabel = dogTagManager.createHeroBackDateMesh(tag.createdAt, previewTextLabel);
+    heroPreviewBackLabel.visible = false;
+    heroPreviewRoot.add(heroPreviewBackLabel);
+
+    // Reset flip state
+    heroFlipAngle = 0;
+    heroFlipTarget = 0;
+
+    fitHeroPreviewCamera();
+    startHeroRenderLoop();
+
+    canvasEl.addEventListener("click", onHeroPreviewCanvasClick);
+}
+
+function onHeroPreviewCanvasClick(event) {
+    if (!heroPreviewRenderer || !heroPreviewCamera || !heroPreviewRoot) {
+        return;
+    }
+
+    const canvasEl = heroPreviewRenderer.domElement;
+    const rect = canvasEl.getBoundingClientRect();
+    const pointer = new THREE.Vector2(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(pointer, heroPreviewCamera);
+    const hits = raycaster.intersectObjects([heroPreviewRoot], true);
+
+    if (hits.length === 0) {
+        selectedTagId = null;
+        closeHeroCard();
+        updateDogTagViewMode();
+    } else {
+        // Flip the tag to reveal the opposite face
+        heroFlipTarget = heroFlipTarget === 0 ? Math.PI : 0;
+    }
+}
+
+function fitHeroPreviewCamera() {
+    if (!heroPreviewRenderer || !heroPreviewCamera || !heroPreviewRoot) {
+        return;
+    }
+
+    const canvasEl = heroPreviewRenderer.domElement;
+    const width = Math.max(1, canvasEl.clientWidth);
+    const height = Math.max(1, canvasEl.clientHeight);
+    heroPreviewRenderer.setSize(width, height, false);
+
+    heroPreviewCamera.aspect = width / height;
+    heroPreviewCamera.updateProjectionMatrix();
+
+    const box = new THREE.Box3().setFromObject(heroPreviewRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const radius = Math.max(size.x, size.y, size.z, 0.1) * 0.64;
+    const fovRad = THREE.MathUtils.degToRad(heroPreviewCamera.fov);
+    const distance = radius / Math.tan(fovRad / 2);
+
+    const textCandidate = heroPreviewRoot.children[2];
+    const focusObject = textCandidate?.geometry ? textCandidate : heroPreviewRoot.children[1] || heroPreviewRoot;
+    const focusBox = new THREE.Box3().setFromObject(focusObject);
+    const focusCenter = focusBox.isEmpty() ? center : focusBox.getCenter(new THREE.Vector3());
+    const frontNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(focusObject.getWorldQuaternion(new THREE.Quaternion())).normalize();
+
+    heroPreviewCamera.position.copy(focusCenter).addScaledVector(frontNormal, distance * 0.47);
+    heroPreviewCamera.position.y += size.y * 0.05;
+    heroPreviewCamera.lookAt(focusCenter);
+    heroPreviewCamera.updateProjectionMatrix();
+}
+
+function renderHeroPreview() {
+    if (!heroPreviewRenderer || !heroPreviewScene || !heroPreviewCamera) {
+        return;
+    }
+
+    heroPreviewRenderer.render(heroPreviewScene, heroPreviewCamera);
+}
+
+function resizeHeroPreview() {
+    fitHeroPreviewCamera();
+    renderHeroPreview();
+}
+
+function disposeHeroPreviewRenderer() {
+    if (heroFlipRafId !== null) {
+        cancelAnimationFrame(heroFlipRafId);
+        heroFlipRafId = null;
+    }
+
+    const canvasEl = document.getElementById("heroPreviewCanvas");
+    if (canvasEl) {
+        canvasEl.removeEventListener("click", onHeroPreviewCanvasClick);
+    }
+
+    if (heroPreviewScene && heroPreviewRoot) {
+        heroPreviewScene.remove(heroPreviewRoot);
+    }
+
+    if (heroPreviewRenderer) {
+        heroPreviewRenderer.dispose();
+    }
+
+    heroPreviewRenderer = null;
+    heroPreviewScene = null;
+    heroPreviewCamera = null;
+    heroPreviewRoot = null;
+    heroPreviewBackLabel = null;
+    heroPreviewFrontLabels = [];
+    heroFlipAngle = 0;
+    heroFlipTarget = 0;
+}
+
+function startHeroRenderLoop() {
+    if (heroFlipRafId !== null) {
+        cancelAnimationFrame(heroFlipRafId);
+    }
+    heroFlipRafId = requestAnimationFrame(heroRenderLoop);
+}
+
+function heroRenderLoop() {
+    if (!heroPreviewRenderer || !heroPreviewScene || !heroPreviewCamera) {
+        heroFlipRafId = null;
+        return;
+    }
+
+    const diff = heroFlipTarget - heroFlipAngle;
+    if (Math.abs(diff) > 0.001) {
+        heroFlipAngle += diff * 0.18;
+    } else {
+        heroFlipAngle = heroFlipTarget;
+    }
+
+    if (heroPreviewRoot) {
+        heroPreviewRoot.rotation.y = heroFlipAngle;
+        const isFlipped = heroFlipAngle > Math.PI / 2;
+        for (const fl of heroPreviewFrontLabels) {
+            fl.visible = !isFlipped;
+        }
+        if (heroPreviewBackLabel) {
+            heroPreviewBackLabel.visible = isFlipped;
+        }
+    }
+
+    heroPreviewRenderer.render(heroPreviewScene, heroPreviewCamera);
+    heroFlipRafId = requestAnimationFrame(heroRenderLoop);
+}
+
+function updateDogTagViewMode() {
+    dogTagManager.updateViewMode({
+        selectedTagId,
+        lodDistance: tagTextLodDistance,
+        camera,
+    });
+
+    if (removeTagBtn) {
+        const hasSelectedTag = selectedTagId !== null && !!dogTagManager.getTagById(selectedTagId);
+        removeTagBtn.classList.toggle("hidden", !hasSelectedTag);
+    }
+}
+
+const setupHeroCardListeners = () => {
+    const closeBtn = document.getElementById("closeHeroPreview");
+    const overlay = document.getElementById("heroPreviewOverlay");
+
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            selectedTagId = null;
+            closeHeroCard();
+            updateDogTagViewMode();
+        };
+    }
+
     if (overlay) {
-        overlay.onclick = closeHeroCard;
+        overlay.onclick = () => {
+            selectedTagId = null;
+            closeHeroCard();
+            updateDogTagViewMode();
+        };
     }
 };
 
-// Try to setup immediately, then again after a tiny delay
 setupHeroCardListeners();
 setTimeout(setupHeroCardListeners, 100);
 
-// Settings screen
 document.getElementById("settingsBtn").onclick = () => {
     const isOpen = !document.getElementById("settingsScreen").classList.contains("hidden");
     if (isOpen) {
@@ -447,29 +792,29 @@ function closeSettings() {
 }
 
 document.getElementById("resetChainBtn").onclick = () => {
-    // Remove all chain links from scene
     for (const link of chainLinks) {
         scene.remove(link);
     }
-    chainLinks.length = 0;
-    echoes.length = 0;
 
-    // Clear label elements
-    document.getElementById("echoLabelsContainer").innerHTML = "";
+    dogTagManager.clearAll();
+
+    chainLinks.length = 0;
+    selectedTagId = null;
+    closeHeroCard();
 
     chainInteraction.rebuildFromLinks();
     updateZoomLimits();
     updateCameraVerticalLimits();
-    setStatus("Chain links: 0");
-    saveChain();
+    addLink();
     closeSettings();
 };
 
 function saveChain() {
     const data = {
         linkCount: chainLinks.length,
-        echoes: echoes.map(({ title, description, index }) => ({ title, description, index })),
+        dogTags: dogTagManager.serialize(),
     };
+
     localStorage.setItem("chainState", JSON.stringify(data));
 }
 
@@ -490,18 +835,39 @@ function restoreChain() {
         return false;
     }
 
+    isRestoring = true;
+
     for (let i = 0; i < data.linkCount; i += 1) {
         addLink();
     }
 
-    if (Array.isArray(data.echoes)) {
-        echoes.length = 0;
-        for (const e of data.echoes) {
-            echoes.push({ title: e.title, description: e.description, index: e.index });
+    const restoredTags = [];
+
+    if (Array.isArray(data.dogTags)) {
+        for (const t of data.dogTags) {
+            if (typeof t?.title === "string" && Number.isInteger(t?.index)) {
+                restoredTags.push({ title: dogTagManager.normalizeTitle(t.title), index: t.index, createdAt: t.createdAt || null });
+            }
         }
-        renderEchoLabels();
+    } else if (Array.isArray(data.echoes)) {
+        // Backward compatibility with legacy echo state.
+        for (const e of data.echoes) {
+            if (typeof e?.title === "string" && Number.isInteger(e?.index)) {
+                restoredTags.push({ title: dogTagManager.normalizeTitle(e.title), index: e.index, createdAt: e.createdAt || null });
+            }
+        }
     }
 
+    for (const entry of restoredTags) {
+        if (entry.index < 0 || entry.index >= chainLinks.length) {
+            continue;
+        }
+        dogTagManager.addTagAtIndex(entry.title, entry.index, entry.createdAt || null);
+    }
+
+    isRestoring = false;
+    updateDogTagViewMode();
+    saveChain();
     return true;
 }
 
@@ -509,6 +875,6 @@ function animate() {
     requestAnimationFrame(animate);
     chainInteraction.update();
     updateCameraVerticalLimits();
+    updateDogTagViewMode();
     renderer.render(scene, camera);
-    updateEchoLabelPositions();
 }
