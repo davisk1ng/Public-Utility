@@ -590,6 +590,7 @@ function onCanvasClick(event) {
     selectedTagId = tag.id;
     openHeroCard(tag.id);
     focusCameraOnTag(tag);
+    positionRemoveBtnBelowTag(tag);
     updateDogTagViewMode();
 }
 
@@ -600,6 +601,26 @@ function focusCameraOnTag(tag) {
     camera.position.z = Math.max(zoomMinZ, zoomMinZ * 1.08);
     camera.lookAt(0, camera.position.y, 0);
     syncZoomSlider();
+}
+
+function positionRemoveBtnBelowTag(tag) {
+    if (!removeTagBtn || window.innerWidth > 600) return;
+
+    // Project the bottom-centre of the tag bounding box to screen Y
+    const box = new THREE.Box3().setFromObject(tag.root);
+    const bottomCentre = new THREE.Vector3(
+        (box.min.x + box.max.x) * 0.5,
+        box.min.y,
+        (box.min.z + box.max.z) * 0.5
+    );
+    bottomCentre.project(camera);
+
+    const screenY = (-bottomCentre.y * 0.5 + 0.5) * canvas.clientHeight;
+    removeTagBtn.style.top = `${Math.round(screenY + 80)}px`;
+    removeTagBtn.style.left = '50%';
+    removeTagBtn.style.bottom = 'auto';
+    removeTagBtn.style.right = 'auto';
+    removeTagBtn.style.transform = 'translateX(-50%)';
 }
 
 function openHeroCard(tagId) {
@@ -858,6 +879,13 @@ function updateDogTagViewMode() {
     if (removeTagBtn) {
         const hasSelectedTag = selectedTagId !== null && !!dogTagManager.getTagById(selectedTagId);
         removeTagBtn.classList.toggle("hidden", !hasSelectedTag);
+        if (!hasSelectedTag && window.innerWidth <= 600) {
+            removeTagBtn.style.top = '';
+            removeTagBtn.style.left = '';
+            removeTagBtn.style.bottom = '';
+            removeTagBtn.style.right = '';
+            removeTagBtn.style.transform = '';
+        }
     }
 }
 

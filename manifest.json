@@ -1,0 +1,15 @@
+{
+  "name": "Hyperlink",
+  "short_name": "Hyperlink",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "start_url": ".",
+  "icons": [
+    {
+      "src": "assets/App logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
