@@ -97,7 +97,10 @@ function init() {
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    // Pass false so Three.js does not override the canvas CSS (inset:0) with pixel values.
+    const initW = canvas.clientWidth || window.innerWidth;
+    const initH = canvas.clientHeight || window.innerHeight;
+    renderer.setSize(initW, initH, false);
 
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
     keyLight.position.set(4, 6, 8);
@@ -424,9 +427,13 @@ function setStatus(message) {
 
 function onWindowResize() {
     syncAppHeight();
-    camera.aspect = window.innerWidth / window.innerHeight;
+    // Use the canvas's actual displayed dimensions (accounts for full-screen CSS inset:0
+    // including areas behind notches/dynamic islands on mobile).
+    const w = canvas.clientWidth || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(w, h, false);
     resizeHeroPreview();
 }
 
@@ -741,7 +748,9 @@ function fitHeroPreviewCamera() {
     const radius = Math.max(sphere.radius, 0.1);
     const fovRad = THREE.MathUtils.degToRad(heroPreviewCamera.fov);
     const fitByHeight = radius / Math.sin(fovRad / 2);
-    const portraitPadding = heroPreviewCamera.aspect < 1 ? 1.32 : 1.16;
+    // Use a wider padding in mobile portrait (narrow screen) so the full tag remains legible.
+    const isPortraitMobile = heroPreviewCamera.aspect < 1 && width < 600;
+    const portraitPadding = heroPreviewCamera.aspect < 1 ? (isPortraitMobile ? 1.65 : 1.32) : 1.16;
     const distance = fitByHeight * portraitPadding;
 
     // Keep camera aligned with the label face normal so the tag does not appear side-on.
