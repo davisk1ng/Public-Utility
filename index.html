@@ -5,21 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Hyperlink
     </title>
-    <link rel="icon" type="image/png" href="assets/chain white icon.png">
-    <link rel="apple-touch-icon" href="assets/App logo.png">
+    <link rel="icon" type="image/png" href="assets/images/chain white icon.png">
+    <link rel="apple-touch-icon" href="assets/images/App logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://use.typekit.net/csj6fho.css">
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+                /* Only show one form at a time */
+                #loginForm.hidden, #registerForm.hidden { display: none; }
+                #authContainer.hidden { display: none !important; }
+                #loginForm, #registerForm { min-width: 320px; }
+                #authContainer { gap: 2rem; }
+                #authContainer a { color: #888 !important; text-decoration: underline; cursor: pointer; }
+                #authContainer a:hover { color: #444 !important; }
+                .auth-action-btn {
+                    background: url('assets/images/metal sheet.jpeg') center center / cover no-repeat;
+                    color: #111;
+                    font-size: 1.2rem;
+                    padding: 0.8rem 0;
+                    border-radius: 6px;
+                    border: 2px solid #555;
+                    margin-bottom: 1rem;
+                    margin-top: 0.5rem;
+                    cursor: pointer;
+                    font-weight: bold;
+                    letter-spacing: 1px;
+                    transition: filter 0.15s ease;
+                }
+                .auth-action-btn:hover { filter: brightness(1.1); }
+        /* Center auth forms and make them visible */
+        #authContainer {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(245,245,245,0.96);
+            z-index: 10000;
+        }
+        #authContainer form {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 2rem 2.5rem;
+            min-width: 260px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        #authContainer input {
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #bbb;
+        }
+        #authContainer button {
+            position: static;
+            bottom: auto;
+            left: auto;
+            padding: 0.5rem;
+            border-radius: 5px;
+            border: 1px solid #222;
+            background: #f5f5f5;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .auth-error {
+            color: #b00;
+            font-size: 0.95em;
+            min-height: 1.2em;
+        }
+        #authLogomark {
+            width: min(320px, 80vw);
+            display: block;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            margin-bottom: -0.5rem;
+        }
+        /* Hide all app UI until authenticated */
+        #mainUiContainer {
+            display: none !important;
+        }
+        /* Show main UI only when authenticated (script.js will remove .hidden) */
+        #mainUiContainer:not(.hidden) {
+            display: block !important;
+        }
+    </style>
 </head>
 <body>
 
-    <div id="splashScreen" aria-label="Loading screen">
-        <img id="splashIcon" src="assets/Chain Icon.png" alt="Loading">
-    </div>
+    <!-- App UI: hidden until authenticated -->
+    <div id="mainUiContainer" class="hidden">
 
-    <button id="settingsBtn" aria-label="Settings">
-        <img id="settingsBtnIcon" src="assets/Gear Icon.png" alt="Settings">
-    </button>
+    <div id="splashScreen" aria-label="Loading screen">
+        <img id="splashIcon" src="assets/images/Chain Icon.png" alt="Loading">
+    </div>
 
     <!-- Settings Screen -->
     <div id="settingsOverlay" class="overlay hidden"></div>
@@ -31,19 +111,119 @@
         <div id="settingsBody">
             <button id="resetChainBtn">Reset Chain Length</button>
             <button id="hideUiBtn" aria-pressed="false">Hide UI: Off</button>
+            <button id="changePasswordBtn">Change Password</button>
+            <div id="changePasswordInline" class="hidden">
+                <input type="password" id="newPasswordInput" placeholder="New password" autocomplete="new-password">
+                <button id="confirmPasswordBtn">Confirm</button>
+                <div id="changePasswordMsg" class="settings-msg"></div>
+            </div>
+            <button id="logoutBtn">Log Out</button>
+            <button id="deleteAccountBtn" class="btn-danger">Delete Account</button>
         </div>
     </div>
 
+    <section id="profileScreen" class="hidden" aria-labelledby="profileNameHeading">
+        <div class="profile-screen-shell">
+            <div class="friends-panel-shell">
+                <div id="profileHeroSection" class="profile-hero-card">
+                    <div class="profile-avatar-card">
+                        <img class="profile-hero-avatar" src="assets/images/Profile Icon.png" alt="Profile avatar">
+                    </div>
+
+                    <div class="profile-summary-card">
+                        <div class="profile-summary-main">
+                            <h1 id="profileNameHeading">Your Name</h1>
+                            <div class="chain-decor" aria-hidden="true">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            </div>
+                            <p class="profile-stat-line">Chain length: <span id="profileChainLength">0.0 in.</span></p>
+                            <p class="profile-stat-line">Total Links: <span id="profileTotalLinks">0</span></p>
+                            <p class="profile-stat-line">Date joined: <span id="profileJoinDate">04-11-2026</span></p>
+                            <div class="profile-edit-row">
+                                <button id="profileEditBtn" class="profile-edit-gear" aria-label="Edit profile" title="Edit profile">
+                                    <img src="assets/images/Gear Icon.svg" alt="">
+                                </button>
+                                <button id="profileSaveBtn" class="profile-save-btn hidden" aria-label="Save profile">Save</button>
+                                <span id="profileSaveMsg" class="profile-save-msg"></span>
+                            </div>
+                            <input type="file" id="avatarFileInput" accept="image/*" style="display:none" aria-label="Choose avatar image">
+                        </div>
+
+                        <div class="profile-recent-panel">
+                            <h2>Recent Links</h2>
+                            <div class="chain-decor chain-decor-small" aria-hidden="true">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                                <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            </div>
+                            <div id="recentLinksList" class="recent-links-list">
+                                <div class="recent-link-pill">Finished a workout</div>
+                                <div class="recent-link-pill">Went on a walk</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="friends-search-wrap">
+                    <button id="profileHeroToggle" class="profile-collapse-toggle" type="button" aria-label="Collapse profile summary" aria-controls="profileHeroSection" aria-expanded="true">
+                        <span class="collapse-arrow" aria-hidden="true"></span>
+                        <span class="sr-only">Collapse profile summary</span>
+                    </button>
+
+                    <label class="friends-search-bar" for="friendsSearchInput">
+                        <span class="friends-search-icon" aria-hidden="true"></span>
+                        <input id="friendsSearchInput" type="search" placeholder="Search friends" autocomplete="off">
+                    </label>
+                </div>
+
+                <div class="friends-grid-wrap">
+                    <div id="friendsGrid" class="friends-grid">
+                        <!-- Populated dynamically from Supabase profiles -->
+                    </div>
+                    <p id="friendsEmptyState" class="friends-empty hidden">No matching profiles found.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div id="uiControls">
-        <button id="addEcho" aria-label="Add Echo">
-            <img id="addEchoIcon" src="assets/Chain Icon.png" alt="Add Echo">
+        <button id="menuToggleBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menuPanel" type="button">
+            <span class="menuToggleLine" aria-hidden="true"></span>
+            <span class="menuToggleLine" aria-hidden="true"></span>
+            <span class="menuToggleLine" aria-hidden="true"></span>
+            <img id="menuToggleCloseIcon" src="assets/images/Close Icon.svg" alt="" aria-hidden="true">
         </button>
-        <div id="zoomControl">
-            <div id="zoomLabel">Zoom</div>
-            <div id="zoomRow">
-                <span class="zoomSign">+</span>
-                <input id="zoomSlider" type="range" min="0" max="100" value="0" aria-label="Zoom slider">
-                <span class="zoomSign">-</span>
+
+        <div id="menuPanel">
+            <button id="addEcho" class="menu-icon-button" aria-label="Chain" type="button">
+                <span class="button-icon-stack" aria-hidden="true">
+                    <img id="addEchoIcon" src="assets/images/Chain Icon weighted.svg" alt="">
+                    <img id="addEchoOverlay" src="assets/images/new.svg" alt="">
+                </span>
+            </button>
+            <button id="profileBtn" class="menu-icon-button" aria-label="Profile and friends" type="button">
+                <img id="profileBtnIcon" src="assets/images/Profile Icon.png" alt="Profile and friends">
+            </button>
+            <button id="settingsBtn" class="menu-icon-button" aria-label="Settings" type="button">
+                <img id="settingsBtnIcon" src="assets/images/Gear Icon.svg" alt="Settings">
+            </button>
+            <button id="milestonesBtn" class="menu-icon-button" aria-label="Milestones and achievements" type="button">
+                <img id="milestonesBtnIcon" src="assets/images/Challenges Icon.svg" alt="Milestones and achievements">
+            </button>
+
+            <div id="zoomControl">
+                <div id="zoomRow">
+                    <span class="zoomSign">+</span>
+                    <input id="zoomSlider" type="range" min="0" max="100" value="0" aria-label="Zoom slider">
+                    <span class="zoomSign">-</span>
+                </div>
             </div>
         </div>
     </div>
@@ -76,15 +256,41 @@
 
     <canvas id="chainCanvas"></canvas>
 
+    </div><!-- /#mainUiContainer -->
+
+    <!-- Auth Forms -->
+    <div id="authContainer">
+        <img src="assets/images/logomark.png" alt="Hyperlink" id="authLogomark">
+        <form id="loginForm">
+            <h2>Login</h2>
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit" class="auth-action-btn">Log In</button>
+            <p>Don't have an account? <a id="showRegister">Register</a></p>
+            <div id="loginError" class="auth-error"></div>
+            <button type="button" id="bypassLoginBtn" style="margin-top:0.5rem;background:transparent;color:#aaa;border:1px dashed #ccc;font-size:0.85rem;padding:0.4rem;border-radius:5px;cursor:pointer;">Bypass Login (Dev)</button>
+        </form>
+        <form id="registerForm" class="hidden">
+            <h2>Create Account</h2>
+            <input type="text" id="registerUsername" placeholder="Username" required>
+            <input type="email" id="registerEmail" placeholder="Email" required>
+            <input type="password" id="registerPassword" placeholder="Password" required>
+            <button type="submit" class="auth-action-btn">Register</button>
+            <p>Already have an account? <a id="showLogin">Login</a></p>
+            <div id="registerError" class="auth-error"></div>
+        </form>
+    </div>
+
     <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
+                "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/",
+                "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
             }
         }
     </script>
-    <script type="module" src="js/script.js"></script>
+    <script type="module" src="js/main.js"></script>
 
 </body>
 </html>

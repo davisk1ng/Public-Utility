@@ -7,7 +7,7 @@
   "start_url": ".",
   "icons": [
     {
-      "src": "assets/App logo.png",
+      "src": "assets/images/App logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }

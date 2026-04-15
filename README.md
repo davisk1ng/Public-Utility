@@ -1,6 +1,6 @@
 # Private-Utility
 
-This page loads `assets/Chain.glb` with Three.js.
+This page loads `assets/models/Chain.glb` with Three.js.
 
 If the model does not appear, do not open `index.html` directly with a `file:///` URL. GLB files must be served over HTTP, for example from this folder with:
 
