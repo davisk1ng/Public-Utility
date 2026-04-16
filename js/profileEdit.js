@@ -15,14 +15,32 @@ export function setupProfileEdit({ onSaved }) {
     let pendingAvatarFile = null;
 
     // --- Enter / exit edit mode ---
+    function getNameText() {
+        // Get only the direct text content, ignoring child elements like the edit button
+        let text = '';
+        for (const node of nameHeading.childNodes) {
+            if (node.nodeType === Node.TEXT_NODE) text += node.textContent;
+        }
+        return text.trim();
+    }
+
     function enterEditMode() {
         profileScreen.classList.add('edit-mode');
         nameHeading.contentEditable = 'true';
+        // Hide the edit button during editing to avoid cursor issues
+        const editGear = nameHeading.querySelector('.profile-edit-gear');
+        if (editGear) editGear.style.display = 'none';
         nameHeading.focus();
-        // Move caret to end
+        // Move caret to end of text
         const range = document.createRange();
-        range.selectNodeContents(nameHeading);
-        range.collapse(false);
+        const textNode = Array.from(nameHeading.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+        if (textNode) {
+            range.setStart(textNode, textNode.textContent.length);
+            range.collapse(true);
+        } else {
+            range.selectNodeContents(nameHeading);
+            range.collapse(false);
+        }
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
@@ -34,6 +52,9 @@ export function setupProfileEdit({ onSaved }) {
     function exitEditMode() {
         profileScreen.classList.remove('edit-mode');
         nameHeading.contentEditable = 'false';
+        // Restore the edit button
+        const editGear = nameHeading.querySelector('.profile-edit-gear');
+        if (editGear) editGear.style.display = '';
         saveBtn.classList.add('hidden');
         saveMsg.textContent = '';
         pendingAvatarFile = null;
@@ -83,7 +104,7 @@ export function setupProfileEdit({ onSaved }) {
             return;
         }
 
-        const newUsername = nameHeading.textContent.trim();
+        const newUsername = getNameText();
         if (!newUsername) {
             saveMsg.style.color = '#b00';
             saveMsg.textContent = 'Username cannot be empty.';

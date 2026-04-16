@@ -90,6 +90,18 @@
         #mainUiContainer:not(.hidden) {
             display: block !important;
         }
+        @media (max-width: 480px) {
+            #loginForm, #registerForm {
+                min-width: 0;
+                width: calc(100vw - 3rem);
+                box-sizing: border-box;
+            }
+            #authContainer form {
+                padding: 1.5rem 1.25rem;
+                box-sizing: border-box;
+                width: calc(100vw - 2rem);
+            }
+        }
     </style>
 </head>
 <body>
@@ -122,17 +134,46 @@
         </div>
     </div>
 
+    <!-- Notification bell — fixed, outside profileScreen so it's not clipped by hidden state -->
+    <button id="notificationBellBtn" class="notification-bell" aria-label="Notifications" type="button">
+        <img id="notificationBellIcon" src="assets/images/notification-off.png" alt="Notifications">
+        <span id="notificationBadge" class="notification-badge hidden"></span>
+    </button>
+    <div id="notificationDropdown" class="notification-dropdown hidden">
+        <h3 class="notif-dropdown-title">Notifications</h3>
+        <div id="notificationList" class="notif-list">
+            <p class="notif-empty">No notifications</p>
+        </div>
+    </div>
+
     <section id="profileScreen" class="hidden" aria-labelledby="profileNameHeading">
         <div class="profile-screen-shell">
             <div class="friends-panel-shell">
                 <div id="profileHeroSection" class="profile-hero-card">
-                    <div class="profile-avatar-card">
-                        <img class="profile-hero-avatar" src="assets/images/Profile Icon.png" alt="Profile avatar">
+                    <div class="profile-avatar-column">
+                        <div class="profile-avatar-card">
+                            <img class="profile-hero-avatar" src="assets/images/Profile Icon.png" alt="Profile avatar">
+                        </div>
+                        <!-- Action row below avatar (hidden on own profile) -->
+                        <div id="profileActions" class="profile-actions hidden">
+                            <button id="addFriendBtn" class="profile-action-btn" aria-label="Add friend" type="button">
+                                <img src="assets/images/Add Friends Icon.png" alt="Add friend">
+                            </button>
+                            <span id="friendStatusTag" class="friend-status-tag hidden"></span>
+                            <button id="blockUserBtn" class="profile-action-btn" aria-label="Block user" type="button">
+                                <img src="assets/images/Block Icon.png" alt="Block user">
+                            </button>
+                        </div>
                     </div>
+
+                    <h1 id="profileNameHeading">Your Name
+                        <button id="profileEditBtn" class="profile-edit-gear" aria-label="Edit profile" title="Edit profile">
+                            <img src="assets/images/Edit icon.png" alt="">
+                        </button>
+                    </h1>
 
                     <div class="profile-summary-card">
                         <div class="profile-summary-main">
-                            <h1 id="profileNameHeading">Your Name</h1>
                             <div class="chain-decor" aria-hidden="true">
                                 <img src="assets/images/Chain Icon weighted.svg" alt="">
                                 <img src="assets/images/Chain Icon weighted.svg" alt="">
@@ -145,11 +186,6 @@
                             <p class="profile-stat-line">Total Links: <span id="profileTotalLinks">0</span></p>
                             <p class="profile-stat-line">Date joined: <span id="profileJoinDate">04-11-2026</span></p>
                             <div class="profile-edit-row">
-                                <button id="profileEditBtn" class="profile-edit-gear" aria-label="Edit profile" title="Edit profile">
-                                    <img src="assets/images/Gear Icon.svg" alt="">
-                                </button>
-                                <button id="profileSaveBtn" class="profile-save-btn hidden" aria-label="Save profile">Save</button>
-                                <span id="profileSaveMsg" class="profile-save-msg"></span>
                             </div>
                             <input type="file" id="avatarFileInput" accept="image/*" style="display:none" aria-label="Choose avatar image">
                         </div>
@@ -168,6 +204,11 @@
                                 <div class="recent-link-pill">Went on a walk</div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="profile-save-row">
+                        <button id="profileSaveBtn" class="profile-save-btn hidden" aria-label="Save profile">Save</button>
+                        <span id="profileSaveMsg" class="profile-save-msg"></span>
                     </div>
                 </div>
 
@@ -251,6 +292,7 @@
     <div id="heroPreviewOverlay" class="overlay hidden"></div>
     <div id="heroPreviewStage" class="hero-preview-stage hidden">
         <canvas id="heroPreviewCanvas" aria-label="Dog tag preview"></canvas>
+        <p id="heroFlipHint" class="hero-flip-hint">Click on the dog tag to flip it!</p>
         <button id="closeHeroPreview" class="close-button hero-preview-close">Back</button>
     </div>
 

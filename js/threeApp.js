@@ -9,6 +9,10 @@ import { DogTagManager } from "./dogTagManager.js";
 import { loadProfiles } from "./profileSearch.js";
 import { supabase } from "./supabase.js";
 import { setupProfileEdit } from "./profileEdit.js";
+import {
+    sendFriendRequest, acceptFriendRequest, declineFriendRequest,
+    refreshFriendData, getCachedIncoming, getStatusForProfile
+} from "./friendSystem.js";
 
 let scene, camera, renderer;
 let chainLinks = [];
@@ -103,6 +107,15 @@ export function initialize3DApp() {
     const profileTotalLinks = document.getElementById("profileTotalLinks");
     const profileJoinDate = document.getElementById("profileJoinDate");
     const recentLinksList = document.getElementById("recentLinksList");
+    const notificationBellBtn = document.getElementById("notificationBellBtn");
+    const notificationBellIcon = document.getElementById("notificationBellIcon");
+    const notificationBadge = document.getElementById("notificationBadge");
+    const notificationDropdown = document.getElementById("notificationDropdown");
+    const notificationList = document.getElementById("notificationList");
+    const profileActions = document.getElementById("profileActions");
+    const addFriendBtn = document.getElementById("addFriendBtn");
+    const blockUserBtn = document.getElementById("blockUserBtn");
+    const friendStatusTag = document.getElementById("friendStatusTag");
     
     // Cached avatar URL for the current logged-in user
     let cachedAvatarUrl = null;
@@ -669,6 +682,14 @@ export function initialize3DApp() {
     
         recentLinksList.innerHTML = "";
     
+        if (titles.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "recent-link-empty";
+            empty.textContent = "No links yet";
+            recentLinksList.appendChild(empty);
+            return;
+        }
+
         titles.forEach((title) => {
             const pill = document.createElement("div");
             pill.className = "recent-link-pill";
@@ -676,7 +697,166 @@ export function initialize3DApp() {
             recentLinksList.appendChild(pill);
         });
     }
-    
+
+    // ─── Notification bell helpers ──────────────────────────
+    let currentViewingUserId = null; // track which profile card is being viewed
+
+    async function updateNotificationBell() {
+        const incoming = getCachedIncoming();
+        const count = incoming.length;
+        if (notificationBellIcon) {
+            notificationBellIcon.src = count > 0
+                ? 'assets/images/notification-on.png'
+                : 'assets/images/notification-off.png';
+        }
+        if (notificationBadge) {
+            notificationBadge.textContent = count > 0 ? String(count) : '';
+            notificationBadge.classList.toggle('hidden', count === 0);
+        }
+    }
+
+    function renderNotificationDropdown() {
+        if (!notificationList) return;
+        const incoming = getCachedIncoming();
+
+        if (incoming.length === 0) {
+            notificationList.innerHTML = '<p class="notif-empty">No notifications</p>';
+            return;
+        }
+
+        notificationList.innerHTML = '';
+        incoming.forEach(req => {
+            const profile = req.profiles;
+            const username = profile?.username || 'Someone';
+            const avatar = profile?.avatar_url || 'assets/images/Profile Icon.png';
+
+            const item = document.createElement('div');
+            item.className = 'notif-item';
+            item.innerHTML = `
+                <img class="notif-item-avatar" src="${avatar}" alt="">
+                <span class="notif-item-info"><b>${username}</b> sent you a friend request</span>
+                <div class="notif-item-actions">
+                    <button class="notif-accept-btn" data-req-id="${req.id}">Accept</button>
+                    <button class="notif-decline-btn" data-req-id="${req.id}">Decline</button>
+                </div>
+            `;
+            notificationList.appendChild(item);
+        });
+
+        // Wire accept/decline buttons
+        notificationList.querySelectorAll('.notif-accept-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await acceptFriendRequest(btn.dataset.reqId);
+                await refreshFriendData();
+                updateNotificationBell();
+                renderNotificationDropdown();
+                loadProfiles().then(filterFriendsGrid);
+                // Refresh current viewed profile's friend status
+                if (currentViewingUserId) updateFriendStatusUI(currentViewingUserId);
+            });
+        });
+        notificationList.querySelectorAll('.notif-decline-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                await declineFriendRequest(btn.dataset.reqId);
+                await refreshFriendData();
+                updateNotificationBell();
+                renderNotificationDropdown();
+            });
+        });
+    }
+
+    // Toggle notification dropdown
+    if (notificationBellBtn) {
+        notificationBellBtn.addEventListener('click', () => {
+            const isOpen = !notificationDropdown.classList.contains('hidden');
+            notificationDropdown.classList.toggle('hidden', isOpen);
+            if (!isOpen) renderNotificationDropdown();
+        });
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (notificationDropdown && !notificationDropdown.classList.contains('hidden')) {
+            if (!notificationDropdown.contains(e.target) && e.target !== notificationBellBtn && !notificationBellBtn?.contains(e.target)) {
+                notificationDropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // ─── Add friend button / status tag helpers ─────────────
+    async function getCurrentUserId() {
+        const { data: { user } } = await supabase.auth.getUser();
+        return user?.id ?? null;
+    }
+
+    async function updateFriendStatusUI(targetUserId) {
+        const myId = await getCurrentUserId();
+        if (!myId) return;
+        const status = getStatusForProfile(targetUserId, myId);
+
+        // Hide add friend button and status tag first; block button stays
+        if (addFriendBtn) addFriendBtn.style.display = 'none';
+        if (friendStatusTag) {
+            friendStatusTag.classList.add('hidden');
+            friendStatusTag.className = 'friend-status-tag hidden';
+            friendStatusTag.innerHTML = '';
+        }
+
+        if (status === 'self') {
+            if (profileActions) profileActions.classList.add('hidden');
+            return;
+        }
+
+        // Always show actions row (block is always visible)
+        if (profileActions) profileActions.classList.remove('hidden');
+
+        if (status === 'none') {
+            // Show add friend button
+            if (addFriendBtn) addFriendBtn.style.display = 'flex';
+        } else if (status === 'pending-sent') {
+            // Show pending tag (like the "You" badge style)
+            if (friendStatusTag) {
+                friendStatusTag.classList.remove('hidden');
+                friendStatusTag.classList.add('tag-pending');
+                friendStatusTag.textContent = 'Pending';
+            }
+        } else if (status === 'pending-received') {
+            // They sent us a request — show pending
+            if (friendStatusTag) {
+                friendStatusTag.classList.remove('hidden');
+                friendStatusTag.classList.add('tag-pending');
+                friendStatusTag.textContent = 'Pending';
+            }
+        } else if (status === 'friend') {
+            // Show friend added icon
+            if (friendStatusTag) {
+                friendStatusTag.classList.remove('hidden');
+                friendStatusTag.classList.add('tag-friend');
+                friendStatusTag.innerHTML = '<img src="assets/images/Added Friend icon.png" alt="Friend">';
+            }
+        }
+    }
+
+    // Add friend button click
+    if (addFriendBtn) {
+        addFriendBtn.addEventListener('click', async () => {
+            if (!currentViewingUserId) return;
+            addFriendBtn.style.pointerEvents = 'none';
+            await sendFriendRequest(currentViewingUserId);
+            await refreshFriendData();
+            updateFriendStatusUI(currentViewingUserId);
+            updateNotificationBell();
+            addFriendBtn.style.pointerEvents = '';
+        });
+    }
+
+    // Block button toggle
+    if (blockUserBtn) {
+        blockUserBtn.addEventListener('click', () => {
+            blockUserBtn.classList.toggle('is-active');
+        });
+    }
+
     function updateProfileScreen() {
         if (!profileScreen) {
             return;
@@ -684,7 +864,11 @@ export function initialize3DApp() {
     
         syncProfileAvatarIcons();
     
-        profileNameHeading.textContent = localStorage.getItem("profileDisplayName") || "Your Name";
+        // Set the name text without destroying the edit button child
+        const displayName = localStorage.getItem("profileDisplayName") || "Your Name";
+        const editBtnEl = profileNameHeading.querySelector('.profile-edit-gear');
+        profileNameHeading.textContent = displayName;
+        if (editBtnEl) profileNameHeading.appendChild(editBtnEl);
     
         const savedTags = dogTagManager?.serialize?.() || [];
         const totalLinks = savedTags.length;
@@ -723,22 +907,47 @@ export function initialize3DApp() {
             heroCard.style.transform = 'translateX(120%)';
 
             if (isYou || !card) {
+                currentViewingUserId = null;
                 updateProfileScreen();
+                profileScreen?.classList.remove('is-viewing-other');
+                // Reset friend UI
+                if (profileActions) profileActions.classList.add('hidden');
+                if (friendStatusTag) { friendStatusTag.classList.add('hidden'); friendStatusTag.innerHTML = ''; }
             } else {
+                const userId = card.getAttribute('data-user-id') || '';
+                currentViewingUserId = userId || null;
                 const name = card.getAttribute('data-name') || 'Unknown';
                 const chainCount = parseInt(card.getAttribute('data-chain-count') || '0', 10);
                 const joinedAt = card.getAttribute('data-joined-at') || '';
                 const chainLength = (chainCount * 1.5).toFixed(1);
                 const friendAvatar = card.querySelector('.friend-avatar img')?.src;
 
-                if (profileNameHeading) profileNameHeading.textContent = name;
+                if (profileNameHeading) {
+                    const editBtn = profileNameHeading.querySelector('.profile-edit-gear');
+                    profileNameHeading.textContent = name;
+                    if (editBtn) profileNameHeading.appendChild(editBtn);
+                }
                 if (profileChainLength) profileChainLength.textContent = `${chainLength} in.`;
                 if (profileTotalLinks) profileTotalLinks.textContent = String(chainCount);
                 if (profileJoinDate) profileJoinDate.textContent = formatProfileDate(joinedAt);
-                renderRecentLinks([]);
+
+                // Parse and display friend's dog tags as recent links
+                let friendTags = [];
+                try {
+                    friendTags = JSON.parse(card.getAttribute('data-dog-tags') || '[]');
+                } catch { friendTags = []; }
+                const friendTitles = Array.isArray(friendTags)
+                    ? friendTags.slice(0, 5).map(t => t.title || 'Untitled')
+                    : [];
+                renderRecentLinks(friendTitles);
+
                 // Show friend's avatar in the hero panel
                 const profileHeroAvatar = document.querySelector('.profile-hero-avatar');
                 if (profileHeroAvatar) profileHeroAvatar.src = friendAvatar || 'assets/images/Profile Icon.png';
+                profileScreen?.classList.add('is-viewing-other');
+
+                // Update friend status UI for this profile
+                if (currentViewingUserId) updateFriendStatusUI(currentViewingUserId);
             }
 
             void heroCard.offsetWidth;
@@ -777,12 +986,28 @@ export function initialize3DApp() {
     
         closeSettings();
         closeEchoModal();
+        currentViewingUserId = null;
         updateProfileScreen();
         profileScreen.classList.remove("hidden");
+        profileScreen.classList.remove("is-viewing-other");
         document.body.classList.add("profile-open");
+        // Show fixed notification bell
+        if (notificationBellBtn) notificationBellBtn.style.display = 'flex';
         shouldRenderScene = false;
         toggleMenu(true);
         setActiveMenuButton(profileBtn);
+
+        // Reset friend UI
+        if (profileActions) profileActions.classList.add('hidden');
+        if (friendStatusTag) { friendStatusTag.classList.add('hidden'); friendStatusTag.innerHTML = ''; }
+        // Close notification dropdown
+        if (notificationDropdown) notificationDropdown.classList.add('hidden');
+
+        // Refresh friend data then update bell and load profiles
+        refreshFriendData().then(() => {
+            updateNotificationBell();
+        });
+
         loadProfiles().then(() => {
             filterFriendsGrid();
             // Auto-highlight the You card since that's whose data is showing
@@ -802,6 +1027,9 @@ export function initialize3DApp() {
     
         profileScreen.classList.add("hidden");
         document.body.classList.remove("profile-open");
+        // Hide fixed notification UI
+        if (notificationBellBtn) notificationBellBtn.style.display = 'none';
+        if (notificationDropdown) notificationDropdown.classList.add('hidden');
         shouldRenderScene = true;
         updateCameraVerticalLimits();
         updateDogTagViewMode();
@@ -1340,9 +1568,10 @@ export function initialize3DApp() {
     async function syncChainCount() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        const serializedTags = dogTagManager?.serialize?.() || [];
         await supabase
             .from('profiles')
-            .update({ chain_count: chainLinks.length })
+            .update({ chain_count: chainLinks.length, dog_tags: serializedTags })
             .eq('id', user.id);
     }
 
