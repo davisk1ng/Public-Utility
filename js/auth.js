@@ -29,6 +29,14 @@ export function setupAuth({ onAuthenticated }) {
     if (showLogin) showLogin.onclick = (e) => { e.preventDefault(); showLoginForm(); };
     showLoginForm();
 
+    // Check for an existing session so the user doesn't have to log in every time
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+            const username = session.user.user_metadata?.username || session.user.email;
+            setAuthenticated(username);
+        }
+    });
+
     const bypassBtn = document.getElementById("bypassLoginBtn");
     if (bypassBtn) bypassBtn.onclick = () => setAuthenticated("Dev");
 
