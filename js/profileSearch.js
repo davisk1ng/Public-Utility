@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { refreshFriendData, getCachedFriendIds, getStatusForProfile } from './friendSystem.js';
+import { refreshFriendData, getCachedFriendIds, getCachedBlockedIds, getStatusForProfile } from './friendSystem.js';
 
 function formatDate(iso) {
     if (!iso) return '—';
@@ -42,9 +42,10 @@ export async function loadProfiles() {
     const grid = document.getElementById('friendsGrid');
     if (!grid) return;
 
-    // Refresh friend data first so we know who is a friend
+    // Refresh friend data first so we know who is a friend / blocked
     await refreshFriendData();
     const friendIds = getCachedFriendIds();
+    const blockedIds = getCachedBlockedIds();
 
     const [{ data: { user } }, { data, error }] = await Promise.all([
         supabase.auth.getUser(),
@@ -59,7 +60,8 @@ export async function loadProfiles() {
 
     const currentId = user?.id ?? null;
     const mine = data.find(p => p.id === currentId);
-    const others = data.filter(p => p.id !== currentId);
+    // Filter out blocked users entirely
+    const others = data.filter(p => p.id !== currentId && !blockedIds.includes(p.id));
 
     // Sort: friends first, then others
     const friends = others.filter(p => friendIds.includes(p.id));

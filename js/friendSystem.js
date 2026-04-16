@@ -142,27 +142,116 @@ export async function getOutgoingPending() {
     return data ?? [];
 }
 
+// ─── Block helpers ─────────────────────────────────────────
+
+/**
+ * Block a user. Inserts a row into the `blocks` table.
+ * Table schema (create in Supabase dashboard):
+ *   blocks (
+ *     id          uuid  primary key default gen_random_uuid(),
+ *     blocker_id  uuid  references auth.users(id) on delete cascade,
+ *     blocked_id  uuid  references auth.users(id) on delete cascade,
+ *     created_at  timestamptz default now(),
+ *     unique(blocker_id, blocked_id)
+ *   )
+ */
+export async function blockUser(targetId) {
+    const myId = await currentUserId();
+    if (!myId || myId === targetId) return null;
+
+    const { data, error } = await supabase
+        .from('blocks')
+        .insert({ blocker_id: myId, blocked_id: targetId })
+        .select()
+        .single();
+
+    if (error) { console.error('blockUser error:', error); return null; }
+
+    // Also remove any existing friendship / friend request between the two users
+    await supabase
+        .from('friend_requests')
+        .delete()
+        .or(
+            `and(sender_id.eq.${myId},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${myId})`
+        );
+
+    return data;
+}
+
+/** Unblock a user (only the blocker can unblock) */
+export async function unblockUser(targetId) {
+    const myId = await currentUserId();
+    if (!myId) return false;
+
+    const { error } = await supabase
+        .from('blocks')
+        .delete()
+        .eq('blocker_id', myId)
+        .eq('blocked_id', targetId);
+
+    if (error) { console.error('unblockUser error:', error); return false; }
+    return true;
+}
+
+/**
+ * Get all user IDs that should be hidden from the current user.
+ * Returns IDs of users I blocked AND users who blocked me (bidirectional).
+ */
+export async function getBlockedUserIds() {
+    const myId = await currentUserId();
+    if (!myId) return [];
+
+    const { data, error } = await supabase
+        .from('blocks')
+        .select('blocker_id, blocked_id')
+        .or(`blocker_id.eq.${myId},blocked_id.eq.${myId}`);
+
+    if (error || !data) return [];
+    return data.map(row => row.blocker_id === myId ? row.blocked_id : row.blocker_id);
+}
+
+/** Check if a block exists between the current user and target (either direction) */
+export async function isBlocked(targetId) {
+    const myId = await currentUserId();
+    if (!myId) return false;
+
+    const { data } = await supabase
+        .from('blocks')
+        .select('id')
+        .or(
+            `and(blocker_id.eq.${myId},blocked_id.eq.${targetId}),and(blocker_id.eq.${targetId},blocked_id.eq.${myId})`
+        )
+        .limit(1)
+        .maybeSingle();
+
+    return !!data;
+}
+
 // ─── Notification badge helpers ────────────────────────────
 
 let cachedIncoming = [];
 let cachedOutgoing = [];
 let cachedFriendIds = [];
+let cachedBlockedIds = [];
 
 export async function refreshFriendData() {
-    const [incoming, outgoing, friends] = await Promise.all([
+    const [incoming, outgoing, friends, blocked] = await Promise.all([
         getIncomingRequests(),
         getOutgoingPending(),
-        getFriendIds()
+        getFriendIds(),
+        getBlockedUserIds()
     ]);
     cachedIncoming = incoming;
     cachedOutgoing = outgoing;
     cachedFriendIds = friends;
-    return { incoming, outgoing, friends };
+    cachedBlockedIds = blocked;
+    return { incoming, outgoing, friends, blocked };
 }
 
 export function getCachedIncoming() { return cachedIncoming; }
 export function getCachedOutgoing() { return cachedOutgoing; }
 export function getCachedFriendIds() { return cachedFriendIds; }
+export function getCachedBlockedIds() { return cachedBlockedIds; }
 
 /**
  * Determine the relationship status between current user and a profile id.
@@ -170,6 +259,7 @@ export function getCachedFriendIds() { return cachedFriendIds; }
  */
 export function getStatusForProfile(profileId, myId) {
     if (profileId === myId) return 'self';
+    if (cachedBlockedIds.includes(profileId)) return 'blocked';
     if (cachedFriendIds.includes(profileId)) return 'friend';
     if (cachedOutgoing.some(r => r.receiver_id === profileId)) return 'pending-sent';
     const inc = cachedIncoming.find(r => r.sender_id === profileId);

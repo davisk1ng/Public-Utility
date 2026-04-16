@@ -11,7 +11,8 @@ import { supabase } from "./supabase.js";
 import { setupProfileEdit } from "./profileEdit.js";
 import {
     sendFriendRequest, acceptFriendRequest, declineFriendRequest,
-    refreshFriendData, getCachedIncoming, getStatusForProfile
+    refreshFriendData, getCachedIncoming, getCachedBlockedIds,
+    getStatusForProfile, blockUser, unblockUser
 } from "./friendSystem.js";
 
 let scene, camera, renderer;
@@ -794,8 +795,9 @@ export function initialize3DApp() {
         if (!myId) return;
         const status = getStatusForProfile(targetUserId, myId);
 
-        // Hide add friend button and status tag first; block button stays
+        // Hide add friend button and status tag first; reset block button
         if (addFriendBtn) addFriendBtn.style.display = 'none';
+        if (blockUserBtn) blockUserBtn.classList.remove('is-active');
         if (friendStatusTag) {
             friendStatusTag.classList.add('hidden');
             friendStatusTag.className = 'friend-status-tag hidden';
@@ -809,6 +811,12 @@ export function initialize3DApp() {
 
         // Always show actions row (block is always visible)
         if (profileActions) profileActions.classList.remove('hidden');
+
+        if (status === 'blocked') {
+            // Show block button as active
+            if (blockUserBtn) blockUserBtn.classList.add('is-active');
+            return;
+        }
 
         if (status === 'none') {
             // Show add friend button
@@ -850,10 +858,25 @@ export function initialize3DApp() {
         });
     }
 
-    // Block button toggle
+    // Block / unblock button
     if (blockUserBtn) {
-        blockUserBtn.addEventListener('click', () => {
-            blockUserBtn.classList.toggle('is-active');
+        blockUserBtn.addEventListener('click', async () => {
+            if (!currentViewingUserId) return;
+            blockUserBtn.style.pointerEvents = 'none';
+
+            const isCurrentlyBlocked = getCachedBlockedIds().includes(currentViewingUserId);
+            if (isCurrentlyBlocked) {
+                await unblockUser(currentViewingUserId);
+            } else {
+                await blockUser(currentViewingUserId);
+            }
+
+            await refreshFriendData();
+            updateFriendStatusUI(currentViewingUserId);
+            updateNotificationBell();
+            // Reload profiles to hide/show the blocked user
+            loadProfiles().then(filterFriendsGrid);
+            blockUserBtn.style.pointerEvents = '';
         });
     }
 
@@ -932,14 +955,19 @@ export function initialize3DApp() {
                 if (profileJoinDate) profileJoinDate.textContent = formatProfileDate(joinedAt);
 
                 // Parse and display friend's dog tags as recent links
+                // Hide dog tags if the user is blocked (either direction)
+                const blockedIds = getCachedBlockedIds();
+                const isBlockedUser = blockedIds.includes(userId);
                 let friendTags = [];
-                try {
-                    friendTags = JSON.parse(card.getAttribute('data-dog-tags') || '[]');
-                } catch { friendTags = []; }
+                if (!isBlockedUser) {
+                    try {
+                        friendTags = JSON.parse(card.getAttribute('data-dog-tags') || '[]');
+                    } catch { friendTags = []; }
+                }
                 const friendTitles = Array.isArray(friendTags)
                     ? friendTags.slice(0, 5).map(t => t.title || 'Untitled')
                     : [];
-                renderRecentLinks(friendTitles);
+                renderRecentLinks(isBlockedUser ? [] : friendTitles);
 
                 // Show friend's avatar in the hero panel
                 const profileHeroAvatar = document.querySelector('.profile-hero-avatar');
