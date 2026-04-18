@@ -75,6 +75,22 @@ export async function declineFriendRequest(requestId) {
     return !error;
 }
 
+/** Cancel an outgoing friend request (only the sender can cancel) */
+export async function cancelFriendRequest(targetId) {
+    const myId = await currentUserId();
+    if (!myId) return false;
+
+    const { error } = await supabase
+        .from('friend_requests')
+        .delete()
+        .eq('sender_id', myId)
+        .eq('receiver_id', targetId)
+        .eq('status', 'pending');
+
+    if (error) { console.error('cancelFriendRequest error:', error); }
+    return !error;
+}
+
 /** Get the relationship row between two users (either direction) */
 export async function getRelationship(userA, userB) {
     const { data } = await supabase
@@ -225,6 +241,31 @@ export async function isBlocked(targetId) {
         .maybeSingle();
 
     return !!data;
+}
+
+/**
+ * Get the list of users blocked BY the current user, with usernames.
+ * Returns [{ id, username }] for each user the current user has blocked.
+ */
+export async function getMyBlockedUsersWithNames() {
+    const myId = await currentUserId();
+    if (!myId) return [];
+
+    const { data, error } = await supabase
+        .from('blocks')
+        .select('blocked_id')
+        .eq('blocker_id', myId);
+
+    if (error || !data || data.length === 0) return [];
+
+    const ids = data.map(r => r.blocked_id);
+    const { data: profiles, error: pErr } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', ids);
+
+    if (pErr || !profiles) return [];
+    return profiles;
 }
 
 // ─── Notification badge helpers ────────────────────────────

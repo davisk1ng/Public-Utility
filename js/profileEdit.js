@@ -1,5 +1,145 @@
 import { supabase } from './supabase.js';
 
+// ── Avatar Crop Helper ──
+function openCropModal(file) {
+    return new Promise((resolve, reject) => {
+        const modal      = document.getElementById('avatarCropModal');
+        const canvas     = document.getElementById('cropCanvas');
+        const zoomSlider = document.getElementById('cropZoomSlider');
+        const confirmBtn = document.getElementById('cropConfirmBtn');
+        const cancelBtn  = document.getElementById('cropCancelBtn');
+        const backdrop   = modal.querySelector('.crop-modal-backdrop');
+        const viewport   = modal.querySelector('.crop-viewport');
+        const ctx        = canvas.getContext('2d');
+
+        const SIZE = viewport.clientWidth || 300;
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        let zoom = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let dragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let startOffX = 0;
+        let startOffY = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, SIZE, SIZE);
+            const scale = Math.min(SIZE / img.width, SIZE / img.height) * zoom;
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const x = (SIZE - w) / 2 + offsetX;
+            const y = (SIZE - h) / 2 + offsetY;
+            ctx.drawImage(img, x, y, w, h);
+        }
+
+        function clampOffset() {
+            const scale = Math.min(SIZE / img.width, SIZE / img.height) * zoom;
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const maxX = Math.max(0, (w - SIZE) / 2);
+            const maxY = Math.max(0, (h - SIZE) / 2);
+            offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
+            offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
+        }
+
+        function onPointerDown(e) {
+            dragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            startOffX = offsetX;
+            startOffY = offsetY;
+            viewport.setPointerCapture(e.pointerId);
+        }
+        function onPointerMove(e) {
+            if (!dragging) return;
+            offsetX = startOffX + (e.clientX - dragStartX);
+            offsetY = startOffY + (e.clientY - dragStartY);
+            clampOffset();
+            draw();
+        }
+        function onPointerUp() { dragging = false; }
+
+        function onZoom() {
+            zoom = parseFloat(zoomSlider.value);
+            clampOffset();
+            draw();
+        }
+
+        function cleanup() {
+            URL.revokeObjectURL(objectUrl);
+            viewport.removeEventListener('pointerdown', onPointerDown);
+            viewport.removeEventListener('pointermove', onPointerMove);
+            viewport.removeEventListener('pointerup', onPointerUp);
+            zoomSlider.removeEventListener('input', onZoom);
+            confirmBtn.removeEventListener('click', onConfirm);
+            cancelBtn.removeEventListener('click', onCancel);
+            backdrop.removeEventListener('click', onCancel);
+            modal.classList.add('hidden');
+        }
+
+        function onConfirm() {
+            // Crop a circular region into a square canvas
+            const outSize = 400;
+            const out = document.createElement('canvas');
+            out.width = outSize;
+            out.height = outSize;
+            const octx = out.getContext('2d');
+
+            // Clip to a circle
+            octx.beginPath();
+            octx.arc(outSize / 2, outSize / 2, outSize / 2, 0, Math.PI * 2);
+            octx.closePath();
+            octx.clip();
+
+            // Draw the same view scaled up to outSize
+            const ratio = outSize / SIZE;
+            const scale = Math.min(SIZE / img.width, SIZE / img.height) * zoom;
+            const w = img.width * scale * ratio;
+            const h = img.height * scale * ratio;
+            const x = (outSize - w) / 2 + offsetX * ratio;
+            const y = (outSize - h) / 2 + offsetY * ratio;
+            octx.drawImage(img, x, y, w, h);
+
+            const dataUrl = out.toDataURL('image/png', 1);
+            cleanup();
+            resolve(dataUrl);
+        }
+
+        function onCancel() {
+            cleanup();
+            resolve(null);
+        }
+
+        img.onload = () => {
+            zoom = 1;
+            offsetX = 0;
+            offsetY = 0;
+            zoomSlider.value = '1';
+            draw();
+            modal.classList.remove('hidden');
+
+            viewport.addEventListener('pointerdown', onPointerDown);
+            viewport.addEventListener('pointermove', onPointerMove);
+            viewport.addEventListener('pointerup', onPointerUp);
+            zoomSlider.addEventListener('input', onZoom);
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            backdrop.addEventListener('click', onCancel);
+        };
+        img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error('Could not load image'));
+        };
+        img.src = objectUrl;
+    });
+}
+
 export function setupProfileEdit({ onSaved }) {
     const profileScreen   = document.getElementById('profileScreen');
     const editBtn         = document.getElementById('profileEditBtn');
@@ -12,7 +152,7 @@ export function setupProfileEdit({ onSaved }) {
 
     if (!editBtn || !saveBtn || !nameHeading || !avatarImg || !fileInput) return;
 
-    let pendingAvatarFile = null;
+    let pendingAvatarDataUrl = null;
 
     // --- Enter / exit edit mode ---
     function getNameText() {
@@ -46,7 +186,7 @@ export function setupProfileEdit({ onSaved }) {
         sel.addRange(range);
         saveBtn.classList.remove('hidden');
         saveMsg.textContent = '';
-        pendingAvatarFile = null;
+        pendingAvatarDataUrl = null;
     }
 
     function exitEditMode() {
@@ -57,7 +197,7 @@ export function setupProfileEdit({ onSaved }) {
         if (editGear) editGear.style.display = '';
         saveBtn.classList.add('hidden');
         saveMsg.textContent = '';
-        pendingAvatarFile = null;
+        pendingAvatarDataUrl = null;
     }
 
     editBtn.addEventListener('click', () => {
@@ -79,15 +219,19 @@ export function setupProfileEdit({ onSaved }) {
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
         if (!file) return;
-        pendingAvatarFile = file;
-        // Preview immediately
-        const reader = new FileReader();
-        reader.onload = (e) => { avatarImg.src = e.target.result; };
-        reader.readAsDataURL(file);
         fileInput.value = '';
+        try {
+            const croppedDataUrl = await openCropModal(file);
+            if (croppedDataUrl) {
+                pendingAvatarDataUrl = croppedDataUrl;
+                avatarImg.src = croppedDataUrl;
+            }
+        } catch (err) {
+            console.error('Crop failed', err);
+        }
     });
 
     // --- Save ---
@@ -112,19 +256,7 @@ export function setupProfileEdit({ onSaved }) {
             return;
         }
 
-        let avatarUrl = null;
-
-        // Resize avatar to base64
-        if (pendingAvatarFile) {
-            try {
-                avatarUrl = await resizeImageToBase64(pendingAvatarFile, 400);
-            } catch (e) {
-                saveMsg.style.color = '#b00';
-                saveMsg.textContent = 'Avatar processing failed: ' + e.message;
-                saveBtn.disabled = false;
-                return;
-            }
-        }
+        const avatarUrl = pendingAvatarDataUrl || null;
 
         // Update profiles row on the server
         const updates = { username: newUsername };
@@ -162,26 +294,5 @@ export function setupProfileEdit({ onSaved }) {
         exitEditMode();
 
         if (typeof onSaved === 'function') onSaved({ username: newUsername, avatarUrl });
-    });
-}
-
-/** Resize an image File to fit within maxSize×maxSize and return a base64 JPEG data URL. */
-function resizeImageToBase64(file, maxSize = 400) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.onload = () => {
-            URL.revokeObjectURL(objectUrl);
-            const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
-        };
-        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not load image')); };
-        img.src = objectUrl;
     });
 }

@@ -117,6 +117,7 @@
     <div id="settingsOverlay" class="overlay hidden"></div>
     <div id="settingsScreen" class="hidden">
         <div id="settingsHeader">
+            <button id="settingsBackBtn" class="panel-back-btn" aria-label="Back" type="button">Back</button>
             <span id="settingsTitle">Settings</span>
             <hr id="settingsDivider">
         </div>
@@ -129,8 +130,23 @@
                 <button id="confirmPasswordBtn">Confirm</button>
                 <div id="changePasswordMsg" class="settings-msg"></div>
             </div>
+            <button id="blockedUsersBtn">Blocked Users</button>
             <button id="logoutBtn">Log Out</button>
             <button id="deleteAccountBtn" class="btn-danger">Delete Account</button>
+        </div>
+    </div>
+
+    <!-- Blocked Users Panel -->
+    <div id="blockedUsersOverlay" class="overlay hidden"></div>
+    <div id="blockedUsersPanel" class="hidden">
+        <div id="blockedUsersHeader">
+            <button id="blockedUsersBackBtn" class="panel-back-btn" aria-label="Back" type="button">Back</button>
+            <span id="blockedUsersTitle">Blocked Users</span>
+            <hr id="blockedUsersDivider">
+        </div>
+        <div id="blockedUsersBody">
+            <p id="blockedUsersEmpty" class="settings-msg">No blocked users.</p>
+            <ul id="blockedUsersList"></ul>
         </div>
     </div>
 
@@ -182,9 +198,9 @@
                                 <img src="assets/images/Chain Icon weighted.svg" alt="">
                                 <img src="assets/images/Chain Icon weighted.svg" alt="">
                             </div>
-                            <p class="profile-stat-line">Chain length: <span id="profileChainLength">0.0 in.</span></p>
+                            <p class="profile-stat-line">Chain Length: <span id="profileChainLength">0.0 in.</span></p>
                             <p class="profile-stat-line">Total Links: <span id="profileTotalLinks">0</span></p>
-                            <p class="profile-stat-line">Date joined: <span id="profileJoinDate">04-11-2026</span></p>
+                            <p class="profile-stat-line">Date Joined: <span id="profileJoinDate">04-11-2026</span></p>
                             <div class="profile-edit-row">
                             </div>
                             <input type="file" id="avatarFileInput" accept="image/*" style="display:none" aria-label="Choose avatar image">
@@ -310,7 +326,6 @@
             <button type="submit" class="auth-action-btn">Log In</button>
             <p>Don't have an account? <a id="showRegister">Register</a></p>
             <div id="loginError" class="auth-error"></div>
-            <button type="button" id="bypassLoginBtn" style="margin-top:0.5rem;background:transparent;color:#aaa;border:1px dashed #ccc;font-size:0.85rem;padding:0.4rem;border-radius:5px;cursor:pointer;">Bypass Login (Dev)</button>
         </form>
         <form id="registerForm" class="hidden">
             <h2>Create Account</h2>
@@ -321,6 +336,26 @@
             <p>Already have an account? <a id="showLogin">Login</a></p>
             <div id="registerError" class="auth-error"></div>
         </form>
+    </div>
+
+    <!-- Avatar crop modal -->
+    <div id="avatarCropModal" class="crop-modal hidden" aria-modal="true" role="dialog" aria-label="Crop avatar image">
+        <div class="crop-modal-backdrop"></div>
+        <div class="crop-modal-dialog">
+            <h2 class="crop-modal-title">Crop Avatar</h2>
+            <div class="crop-viewport">
+                <canvas id="cropCanvas"></canvas>
+                <div class="crop-circle-guide"></div>
+            </div>
+            <div class="crop-controls">
+                <label class="crop-zoom-label" for="cropZoomSlider">Zoom</label>
+                <input id="cropZoomSlider" type="range" min="1" max="4" step="0.01" value="1" class="crop-zoom-slider">
+            </div>
+            <div class="crop-actions">
+                <button id="cropCancelBtn" class="crop-btn crop-btn-cancel" type="button">Cancel</button>
+                <button id="cropConfirmBtn" class="crop-btn crop-btn-confirm" type="button">Apply</button>
+            </div>
+        </div>
     </div>
 
     <script type="importmap">

@@ -37,9 +37,6 @@ export function setupAuth({ onAuthenticated }) {
         }
     });
 
-    const bypassBtn = document.getElementById("bypassLoginBtn");
-    if (bypassBtn) bypassBtn.onclick = () => setAuthenticated("Dev");
-
     function setAuthenticated(username) {
         authContainer.classList.add("hidden");
         mainUiContainer.classList.remove("hidden");

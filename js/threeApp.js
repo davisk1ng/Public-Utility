@@ -11,8 +11,9 @@ import { supabase } from "./supabase.js";
 import { setupProfileEdit } from "./profileEdit.js";
 import {
     sendFriendRequest, acceptFriendRequest, declineFriendRequest,
+    cancelFriendRequest,
     refreshFriendData, getCachedIncoming, getCachedBlockedIds,
-    getStatusForProfile, blockUser, unblockUser
+    getStatusForProfile, blockUser, unblockUser, getMyBlockedUsersWithNames
 } from "./friendSystem.js";
 
 let scene, camera, renderer;
@@ -285,7 +286,7 @@ export function initialize3DApp() {
     
             setStatus(font ? "Chain and dog tag models loaded." : "Chain and dog tag models loaded (font unavailable, using canvas text).");
     
-            if (!restoreChain()) {
+            if (!(await restoreChain())) {
                 addLink();
             }
     
@@ -827,6 +828,7 @@ export function initialize3DApp() {
                 friendStatusTag.classList.remove('hidden');
                 friendStatusTag.classList.add('tag-pending');
                 friendStatusTag.textContent = 'Pending';
+                friendStatusTag.style.cursor = 'pointer';
             }
         } else if (status === 'pending-received') {
             // They sent us a request — show pending
@@ -834,6 +836,7 @@ export function initialize3DApp() {
                 friendStatusTag.classList.remove('hidden');
                 friendStatusTag.classList.add('tag-pending');
                 friendStatusTag.textContent = 'Pending';
+                friendStatusTag.style.cursor = '';
             }
         } else if (status === 'friend') {
             // Show friend added icon
@@ -855,6 +858,40 @@ export function initialize3DApp() {
             updateFriendStatusUI(currentViewingUserId);
             updateNotificationBell();
             addFriendBtn.style.pointerEvents = '';
+        });
+    }
+
+    // Cancel pending friend request by clicking the "Pending" tag
+    if (friendStatusTag) {
+        friendStatusTag.addEventListener('click', async () => {
+            if (!currentViewingUserId) return;
+            const myId = await getCurrentUserId();
+            if (!myId) return;
+            const status = getStatusForProfile(currentViewingUserId, myId);
+            if (status !== 'pending-sent') return;
+            friendStatusTag.style.pointerEvents = 'none';
+            await cancelFriendRequest(currentViewingUserId);
+            await refreshFriendData();
+            updateFriendStatusUI(currentViewingUserId);
+            updateNotificationBell();
+            friendStatusTag.style.pointerEvents = '';
+        });
+    }
+
+    // Cancel pending friend request by clicking the "Pending" tag
+    if (friendStatusTag) {
+        friendStatusTag.addEventListener('click', async () => {
+            if (!currentViewingUserId) return;
+            const myId = await getCurrentUserId();
+            if (!myId) return;
+            const status = getStatusForProfile(currentViewingUserId, myId);
+            if (status !== 'pending-sent') return;
+            friendStatusTag.style.pointerEvents = 'none';
+            await cancelFriendRequest(currentViewingUserId);
+            await refreshFriendData();
+            updateFriendStatusUI(currentViewingUserId);
+            updateNotificationBell();
+            friendStatusTag.style.pointerEvents = '';
         });
     }
 
@@ -1519,11 +1556,11 @@ export function initialize3DApp() {
         settingsBtn.onclick = () => {
             const isOpen = !document.getElementById("settingsScreen").classList.contains("hidden");
             closeProfileScreen();
-            toggleMenu(false);
     
             if (isOpen) {
                 closeSettings();
             } else {
+                toggleMenu(false);
                 setActiveMenuButton(settingsBtn);
                 document.getElementById("settingsOverlay").classList.remove("hidden");
                 document.getElementById("settingsScreen").classList.remove("hidden");
@@ -1532,12 +1569,70 @@ export function initialize3DApp() {
     }
     
     document.getElementById("settingsOverlay").addEventListener("click", closeSettings);
+    const settingsBackBtn = document.getElementById("settingsBackBtn");
+    if (settingsBackBtn) settingsBackBtn.onclick = closeSettings;
     
     function closeSettings() {
         document.getElementById("settingsOverlay").classList.add("hidden");
         document.getElementById("settingsScreen").classList.add("hidden");
+        closeBlockedUsersPanel();
         setActiveMenuButton(isProfileScreenOpen() ? profileBtn : null);
     }
+
+    // ─── Blocked Users Panel ───────────────────────────────
+    const blockedUsersBtn = document.getElementById("blockedUsersBtn");
+    const blockedUsersPanel = document.getElementById("blockedUsersPanel");
+    const blockedUsersOverlay = document.getElementById("blockedUsersOverlay");
+    const blockedUsersBackBtn = document.getElementById("blockedUsersBackBtn");
+    const blockedUsersList = document.getElementById("blockedUsersList");
+    const blockedUsersEmpty = document.getElementById("blockedUsersEmpty");
+
+    async function openBlockedUsersPanel() {
+        blockedUsersPanel.classList.remove("hidden");
+        blockedUsersOverlay.classList.remove("hidden");
+        blockedUsersList.innerHTML = "";
+        blockedUsersEmpty.textContent = "Loading…";
+
+        const users = await getMyBlockedUsersWithNames();
+
+        if (users.length === 0) {
+            blockedUsersEmpty.textContent = "No blocked users.";
+            blockedUsersEmpty.classList.remove("hidden");
+        } else {
+            blockedUsersEmpty.classList.add("hidden");
+            users.forEach(u => {
+                const li = document.createElement("li");
+                const nameSpan = document.createElement("span");
+                nameSpan.className = "blocked-username";
+                nameSpan.textContent = u.username || "Unknown";
+                const btn = document.createElement("button");
+                btn.className = "unblock-btn";
+                btn.textContent = "Unblock";
+                btn.onclick = async () => {
+                    btn.disabled = true;
+                    btn.textContent = "…";
+                    await unblockUser(u.id);
+                    await refreshFriendData();
+                    li.remove();
+                    if (!blockedUsersList.children.length) {
+                        blockedUsersEmpty.textContent = "No blocked users.";
+                        blockedUsersEmpty.classList.remove("hidden");
+                    }
+                };
+                li.append(nameSpan, btn);
+                blockedUsersList.appendChild(li);
+            });
+        }
+    }
+
+    function closeBlockedUsersPanel() {
+        blockedUsersPanel.classList.add("hidden");
+        blockedUsersOverlay.classList.add("hidden");
+    }
+
+    if (blockedUsersBtn) blockedUsersBtn.onclick = openBlockedUsersPanel;
+    if (blockedUsersBackBtn) blockedUsersBackBtn.onclick = closeBlockedUsersPanel;
+    if (blockedUsersOverlay) blockedUsersOverlay.addEventListener("click", closeBlockedUsersPanel);
     
     function applyUiVisibilityState() {
         toggleMenu(false);
@@ -1603,21 +1698,42 @@ export function initialize3DApp() {
             .eq('id', user.id);
     }
 
-    function restoreChain() {
-        const raw = localStorage.getItem("chainState");
-        if (!raw) {
-            return false;
-        }
+    async function restoreChain() {
+        let data = null;
 
-        let data;
+        // Try fetching chain state from the server so the chain is
+        // consistent across every device the user logs in on.
         try {
-            data = JSON.parse(raw);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('chain_count, dog_tags')
+                    .eq('id', user.id)
+                    .single();
+                if (profile && typeof profile.chain_count === 'number' && profile.chain_count >= 1) {
+                    data = {
+                        linkCount: profile.chain_count,
+                        dogTags: Array.isArray(profile.dog_tags) ? profile.dog_tags : [],
+                    };
+                }
+            }
         } catch {
-            return false;
+            // Server fetch failed – fall through to localStorage.
         }
 
-        if (!data || typeof data.linkCount !== "number" || data.linkCount < 1) {
-            return false;
+        // Fall back to localStorage when the server has no data yet.
+        if (!data) {
+            const raw = localStorage.getItem("chainState");
+            if (!raw) return false;
+            try {
+                data = JSON.parse(raw);
+            } catch {
+                return false;
+            }
+            if (!data || typeof data.linkCount !== "number" || data.linkCount < 1) {
+                return false;
+            }
         }
     
         isRestoring = true;
