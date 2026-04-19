@@ -1,0 +1,299 @@
+﻿#uiControls {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    left: calc(env(safe-area-inset-left, 0px) + 18px);
+    bottom: auto;
+    z-index: 1005;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--hotbar-gap);
+}
+
+#uiControls button {
+    position: static;
+    margin-right: 0;
+    font-size: 19px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+#menuToggleBtn,
+.menu-icon-button {
+    width: var(--hotbar-size);
+    height: var(--hotbar-size);
+    padding: clamp(3px, 0.8vw, 5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    line-height: 0;
+    border: var(--hotbar-border-width) solid #000000;
+    border-radius: var(--hotbar-radius);
+    background: var(--hotbar-surface);
+    box-shadow: var(--hotbar-shadow), 0 4px 12px rgba(0,0,0,0.22);
+    backdrop-filter: none;
+    overflow: hidden;
+}
+
+#menuToggleBtn:hover,
+#menuToggleBtn:focus-visible {
+    background: var(--hotbar-surface);
+    box-shadow: var(--hotbar-shadow), 0 0 0 1.5px #000000;
+    transform: none;
+}
+
+.menu-icon-button:hover,
+.menu-icon-button:focus-visible {
+    background: var(--hotbar-surface);
+    box-shadow: var(--hotbar-shadow), 0 0 0 1.5px #000000;
+    transform: translateY(-1px);
+}
+
+#menuToggleBtn {
+    position: relative;
+    z-index: 1006;
+    flex-direction: column;
+}
+
+#menuToggleBtn .menuToggleLine {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 58%;
+    height: 3px;
+    margin: 2px 0;
+    border-radius: 999px;
+    background: #111111;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+    transform-origin: center;
+    transition: transform 0.2s ease, opacity 0.12s ease;
+}
+
+#menuToggleCloseIcon {
+    display: none;
+}
+
+#menuToggleBtn.is-open .menuToggleLine {
+    opacity: 1;
+    transition-delay: 0s;
+}
+
+#menuToggleBtn.is-open .menuToggleLine:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+#menuToggleBtn.is-open .menuToggleLine:nth-child(2) {
+    opacity: 0;
+}
+
+#menuToggleBtn.is-open .menuToggleLine:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
+#menuPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--hotbar-gap);
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.22s ease, transform 0.22s ease, max-height 0.22s ease;
+}
+
+#menuPanel.is-open {
+    opacity: 1;
+    max-height: min(88vh, 920px);
+    overflow: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+#removeTagBtn {
+    position: fixed;
+    left: calc(env(safe-area-inset-left, 0px) + 20px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 116px);
+    z-index: 1012;
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+    pointer-events: auto;
+}
+
+#removeTagBtn.hidden {
+    display: none;
+}
+
+#addEcho {
+    display: flex;
+    padding: clamp(3px, 0.8vw, 5px);
+    width: var(--hotbar-size);
+    height: var(--hotbar-size);
+    line-height: 0;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+#addEcho .button-icon-stack {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#addEchoIcon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Hotbar zoom box */
+#zoomControl {
+    width: calc(var(--hotbar-size) + 4px);
+    min-height: clamp(168px, 28vh, 210px);
+    margin: 18px 0 20px;
+    padding: 0;
+    background: var(--hotbar-surface);
+    border: var(--hotbar-border-width) solid #111111;
+    border-radius: var(--hotbar-radius);
+    box-sizing: border-box;
+    box-shadow: var(--hotbar-shadow);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+}
+
+#zoomRow {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+.zoomSign {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(12px, 1.8vw, 16px);
+    width: 100%;
+    text-align: center;
+    color: #111;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1;
+    z-index: 3;
+    pointer-events: none;
+}
+
+#zoomRow .zoomSign:first-child {
+    bottom: -24px;
+}
+
+#zoomRow .zoomSign:last-child {
+    top: -24px;
+}
+
+#zoomSlider {
+    position: absolute;
+    top: calc(50% + 6px);
+    left: calc(50% - 6px);
+    width: clamp(162px, 30vh, 198px);
+    height: calc(var(--hotbar-size) - 2px);
+    margin: 0;
+    padding: 0;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    transform-origin: center;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1;
+}
+
+#zoomSlider::-webkit-slider-runnable-track {
+    width: clamp(162px, 30vh, 198px);
+    height: calc(var(--hotbar-size) - 6px);
+    background: transparent;
+    border: none;
+}
+
+#zoomSlider::-moz-range-track {
+    width: clamp(162px, 30vh, 198px);
+    height: calc(var(--hotbar-size) - 6px);
+    background: transparent;
+    border: none;
+}
+
+#zoomSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 42px;
+    height: calc(var(--hotbar-size) + 4px);
+    margin-top: 0;
+    background: url("../assets/images/Thumb%20Slider.svg") center center / 116% auto no-repeat;
+    border: none;
+    border-radius: 10px;
+    box-sizing: border-box;
+    transform: rotate(90deg) scale(1.9);
+    transform-origin: center;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
+    
+}
+
+#zoomSlider::-moz-range-thumb {
+    appearance: none;
+    width: 42px;
+    height: calc(var(--hotbar-size) + 4px);
+    background: url("../assets/images/Thumb%20Slider.svg") center center / 116% auto no-repeat;
+    border: none;
+    border-radius: 10px;
+    box-sizing: border-box;
+    transform: rotate(90deg) scale(1.02);
+    transform-origin: center;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
+}
+
+#zoomSlider::-moz-range-progress {
+    background: transparent;
+    height: calc(var(--hotbar-size) - 6px);
+    border-radius: 5px;
+}
+
+#statusMessage {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    right: calc(env(safe-area-inset-right, 0px) + 20px);
+    z-index: 2;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: #111;
+    font-size: clamp(20px, 3.6vw, 29px);
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 600;
+    font-style: normal;
+    max-width: min(60vw, 320px);
+    text-align: right;
+}
+
+canvas {
+    display: block;
+}
+
+#chainCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none;
+}
+

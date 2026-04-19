@@ -9,7 +9,38 @@
     <link rel="apple-touch-icon" href="assets/images/App logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://use.typekit.net/csj6fho.css">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/splash.css">
+    <link rel="stylesheet" href="css/hotbar.css">
+    <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/modals.css">
+    <link rel="stylesheet" href="css/challenges.css">
+    <link rel="stylesheet" href="css/add-challenge-modal.css">
+            <!-- Add Challenge Modal -->
+            <div id="addChallengeModalBackdrop" class="add-challenge-modal-backdrop hidden"></div>
+            <div id="addChallengeModal" class="add-challenge-modal hidden" role="dialog" aria-modal="true">
+                <div class="add-challenge-modal-card">
+                    <button class="add-challenge-modal-x" id="addChallengeModalClose" aria-label="Close">&#10005;</button>
+                    <div class="add-challenge-modal-profile">
+                        <img class="add-challenge-modal-avatar" id="addChallengeModalAvatar" src="assets/images/Profile Icon.png" alt="">
+                        <span class="add-challenge-modal-username" id="addChallengeModalUsername">You</span>
+                    </div>
+                    <div class="add-challenge-modal-body">
+                        <textarea id="addChallengeModalInput" class="add-challenge-modal-input" maxlength="40" placeholder="Describe your challenge..."></textarea>
+                    </div>
+                </div>
+                <div class="add-challenge-modal-footer">
+                    <label class="add-challenge-modal-toggle">
+                        <span id="addChallengeModalToggleLabel">Do it solo</span>
+                        <span class="add-challenge-modal-switch">
+                            <input type="checkbox" id="addChallengeModalSwitch">
+                            <span class="add-challenge-modal-switch-slider"></span>
+                        </span>
+                    </label>
+                    <button class="add-challenge-modal-save" id="addChallengeModalSave">Save</button>
+                </div>
+            </div>
     <style>
                 /* Only show one form at a time */
                 #loginForm.hidden, #registerForm.hidden { display: none; }
@@ -250,6 +281,115 @@
         </div>
     </section>
 
+    <!-- Challenges Screen -->
+    <section id="challengesScreen" class="hidden" aria-labelledby="challengesHeading">
+        <div class="challenges-screen-shell">
+            <div class="challenges-panel-shell">
+
+                <!-- Top Row: Leaderboard + Header -->
+                <div class="challenges-top-row">
+                    <div class="challenges-leaderboard">
+                        <h2>Leaderboard</h2>
+                        <div class="leaderboard-cards">
+                            <div class="leaderboard-card gold">
+                                <span class="leaderboard-rank-arrow up" aria-label="Rank up">&#9650;</span>
+                                <span class="leaderboard-card-rank">1. Username</span>
+                                <span class="leaderboard-card-links">48 Links</span>
+                            </div>
+                            <div class="leaderboard-card silver">
+                                <span class="leaderboard-rank-arrow down" aria-label="Rank down">&#9660;</span>
+                                <span class="leaderboard-card-rank">2. Username</span>
+                                <span class="leaderboard-card-links">35 Links</span>
+                            </div>
+                            <div class="leaderboard-card copper">
+                                <span class="leaderboard-rank-arrow up" aria-label="Rank up">&#9650;</span>
+                                <span class="leaderboard-card-rank">3. Username</span>
+                                <span class="leaderboard-card-links">32 Links</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="challenges-header-box">
+                        <h1 id="challengesHeading">Daily Challenges</h1>
+                        <div class="challenges-header-chain" aria-hidden="true">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                            <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        </div>
+                        <span class="challenges-header-links">Total Links: <strong>20</strong></span>
+                    </div>
+                </div>
+
+                <!-- Columns: In Progress | Daily | Friends -->
+                <div class="challenges-columns">
+
+                    <!-- In Progress -->
+                    <div class="challenges-column col-in-progress">
+                        <h3 class="challenges-column-header">In Progress</h3>
+                        <button class="challenges-add-btn" type="button" aria-label="Add challenge">+</button>
+                        <!-- Challenge cards will be rendered here dynamically -->
+                    </div>
+
+                    <!-- Chain divider -->
+                    <div class="challenges-chain-divider" aria-hidden="true">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                    </div>
+
+                    <!-- Daily -->
+                    <div class="challenges-column col-daily">
+                        <h3 class="challenges-column-header">Daily</h3>
+                        <!-- Challenge cards will be rendered here dynamically -->
+                    </div>
+
+                    <!-- Chain divider -->
+                    <div class="challenges-chain-divider" aria-hidden="true">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                        <img src="assets/images/Chain Icon weighted.svg" alt="">
+                    </div>
+
+                    <!-- Friends -->
+                    <div class="challenges-column col-friends">
+                        <h3 class="challenges-column-header">Friends</h3>
+                        <!-- Challenge cards will be rendered here dynamically -->
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
     <div id="uiControls">
         <button id="menuToggleBtn" aria-label="Open menu" aria-expanded="false" aria-controls="menuPanel" type="button">
             <span class="menuToggleLine" aria-hidden="true"></span>
@@ -268,11 +408,11 @@
             <button id="profileBtn" class="menu-icon-button" aria-label="Profile and friends" type="button">
                 <img id="profileBtnIcon" src="assets/images/Profile Icon.png" alt="Profile and friends">
             </button>
-            <button id="settingsBtn" class="menu-icon-button" aria-label="Settings" type="button">
-                <img id="settingsBtnIcon" src="assets/images/Gear Icon.svg" alt="Settings">
-            </button>
             <button id="milestonesBtn" class="menu-icon-button" aria-label="Milestones and achievements" type="button">
                 <img id="milestonesBtnIcon" src="assets/images/Challenges Icon.svg" alt="Milestones and achievements">
+            </button>
+            <button id="settingsBtn" class="menu-icon-button" aria-label="Settings" type="button">
+                <img id="settingsBtnIcon" src="assets/images/Gear Icon.svg" alt="Settings">
             </button>
 
             <div id="zoomControl">

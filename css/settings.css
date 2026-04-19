@@ -1,0 +1,212 @@
+/* Settings screen */
+#settingsScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--app-height);
+    background: #ffffff;
+    z-index: 1003;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 48px);
+    padding-left: calc(env(safe-area-inset-left, 0px) + 24px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 24px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+#settingsScreen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#settingsHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+    position: relative;
+    width: 100%;
+}
+
+.panel-back-btn {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    z-index: 1005;
+    background: #ffffff;
+    border: 2px solid #111;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #111;
+    padding: 10px 32px;
+    margin: 0;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 700;
+}
+
+#settingsTitle {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111;
+    letter-spacing: 0.04em;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-style: normal;
+}
+
+#settingsDivider {
+    border: none;
+    border-top: 1px solid #111;
+    width: calc(100% + 24px);
+    margin: 10px 0 0 0;
+}
+
+#settingsBody {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 320px;
+}
+
+#settingsBody button {
+    position: static;
+    justify-content: center;
+    width: 60%;
+}
+
+#changePasswordInline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 60%;
+}
+
+#changePasswordInline.hidden {
+    display: none;
+}
+
+#changePasswordInline input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.settings-msg {
+    font-size: 0.85rem;
+    min-height: 1.1em;
+    text-align: center;
+}
+
+.btn-danger {
+    color: #c0392b !important;
+    border-color: #c0392b !important;
+}
+
+/* Blocked Users Panel */
+#blockedUsersPanel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--app-height);
+    background: #ffffff;
+    z-index: 1004;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 48px);
+    padding-left: calc(env(safe-area-inset-left, 0px) + 24px);
+    padding-right: calc(env(safe-area-inset-right, 0px) + 24px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+#blockedUsersPanel.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#blockedUsersHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 32px;
+    position: relative;
+    width: 100%;
+}
+
+#blockedUsersTitle {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111;
+    letter-spacing: 0.04em;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-style: normal;
+}
+
+#blockedUsersDivider {
+    border: none;
+    border-top: 1px solid #111;
+    width: calc(100% + 24px);
+    margin: 10px 0 0 0;
+}
+
+#blockedUsersBody {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 320px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#blockedUsersList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+#blockedUsersList li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+#blockedUsersList li .blocked-username {
+    font-size: 0.95rem;
+    color: #111;
+    font-weight: 500;
+}
+
+#blockedUsersList li .unblock-btn {
+    background: transparent;
+    border: 1px solid #c0392b;
+    color: #c0392b;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#blockedUsersOverlay {
+    z-index: 1003;
+}
+

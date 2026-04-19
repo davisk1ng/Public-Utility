@@ -84,16 +84,17 @@ function openCropModal(file) {
         }
 
         function onConfirm() {
-            // Crop a circular region into a square canvas
+            // Crop a rounded-square region matching avatar shape
             const outSize = 400;
             const out = document.createElement('canvas');
             out.width = outSize;
             out.height = outSize;
             const octx = out.getContext('2d');
 
-            // Clip to a circle
+            // Clip to a rounded rectangle matching avatar border-radius (24px scaled)
+            const r = outSize * (24 / SIZE);
             octx.beginPath();
-            octx.arc(outSize / 2, outSize / 2, outSize / 2, 0, Math.PI * 2);
+            octx.roundRect(0, 0, outSize, outSize, r);
             octx.closePath();
             octx.clip();
 

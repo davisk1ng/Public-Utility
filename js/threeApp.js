@@ -1,3 +1,370 @@
+// --- Challenge State ---
+const DAILY_CHALLENGE_POOL = [
+    "Do 10 pushups",
+    "Read 5 pages",
+    "Drink 2L of water",
+    "Take a 20 minute walk",
+    "Stretch for 10 minutes",
+    "Write 3 things you're grateful for",
+    "No sugar for the next 6 hours",
+    "Meditate for 10 minutes",
+    "Clean your room for 15 minutes",
+    "Do 30 squats",
+    "Read one chapter of a book",
+    "Journal for 10 minutes",
+    "Go to bed 30 minutes earlier",
+    "Do 20 sit-ups",
+    "Practice a skill for 25 minutes",
+];
+const DAILY_CHALLENGE_COUNT = 6;
+const DAILY_CHALLENGE_STORAGE_KEY = "dailyChallengeStateV1";
+let availableChallenges = [];
+let inProgressChallenges = [];
+
+function getTodayChallengeKey() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+}
+
+function buildDailyChallengesForDate(dateKey) {
+    const dateSeed = Number(dateKey.replace(/-/g, "")) || 0;
+    const startIndex = dateSeed % DAILY_CHALLENGE_POOL.length;
+    const challenges = [];
+    for (let i = 0; i < DAILY_CHALLENGE_COUNT; i += 1) {
+        const poolIndex = (startIndex + i) % DAILY_CHALLENGE_POOL.length;
+        challenges.push({
+            id: `daily-${dateKey}-${poolIndex}`,
+            text: DAILY_CHALLENGE_POOL[poolIndex],
+            type: "daily",
+        });
+    }
+    return challenges;
+}
+
+function persistDailyChallengeState(dateKey) {
+    const remainingDailyIds = availableChallenges
+        .filter((challenge) => challenge.type === "daily")
+        .map((challenge) => challenge.id);
+    localStorage.setItem(
+        DAILY_CHALLENGE_STORAGE_KEY,
+        JSON.stringify({ dateKey, remainingDailyIds })
+    );
+}
+
+function ensureDailyChallengesForToday() {
+    const todayKey = getTodayChallengeKey();
+    const allDailyForToday = buildDailyChallengesForDate(todayKey);
+    const idsForToday = new Set(allDailyForToday.map((challenge) => challenge.id));
+
+    let stored = null;
+    try {
+        stored = JSON.parse(localStorage.getItem(DAILY_CHALLENGE_STORAGE_KEY) || "null");
+    } catch {
+        stored = null;
+    }
+
+    const remainingIds = stored?.dateKey === todayKey && Array.isArray(stored.remainingDailyIds)
+        ? stored.remainingDailyIds.filter((id) => idsForToday.has(id))
+        : allDailyForToday.map((challenge) => challenge.id);
+    const remainingIdSet = new Set(remainingIds);
+
+    const nonDailyChallenges = availableChallenges.filter((challenge) => challenge.type !== "daily");
+    const remainingDailyChallenges = allDailyForToday.filter((challenge) => remainingIdSet.has(challenge.id));
+    availableChallenges = [...nonDailyChallenges, ...remainingDailyChallenges];
+
+    localStorage.setItem(
+        DAILY_CHALLENGE_STORAGE_KEY,
+        JSON.stringify({ dateKey: todayKey, remainingDailyIds: remainingIds })
+    );
+}
+
+ensureDailyChallengesForToday();
+
+function renderChallenges() {
+                const getOrCreateCarousel = (column) => {
+                    let carousel = column.querySelector('.challenge-card-carousel');
+                    if (!carousel) {
+                        carousel = document.createElement('div');
+                        carousel.className = 'challenge-card-carousel';
+                        column.appendChild(carousel);
+                    }
+                    carousel.innerHTML = '';
+                    return carousel;
+                };
+                ensureDailyChallengesForToday();
+                // Update total links in the top right to the user's actual link count
+                const totalLinksElem = document.querySelector('.challenges-header-links strong');
+                const profileTotalLinksElem = document.getElementById('profileTotalLinks');
+                let userLinks = 0;
+                if (profileTotalLinksElem) {
+                    userLinks = parseInt(profileTotalLinksElem.textContent, 10) || 0;
+                }
+                if (totalLinksElem) {
+                    totalLinksElem.textContent = userLinks;
+                }
+            // Make leaderboard nameplates clickable
+            document.querySelectorAll('.leaderboard-card-rank').forEach(el => {
+                el.style.cursor = 'pointer';
+                el.onclick = function() {
+                    // Extract username from the text (format: '1. Username')
+                    const text = el.textContent.trim();
+                    const username = text.replace(/^\d+\.\s*/, '');
+                    // Call a function to show the profile page for this username
+                    if (typeof window.showProfileByUsername === 'function') {
+                        window.showProfileByUsername(username);
+                    } else {
+                        // Fallback: store username and show profile screen
+                        localStorage.setItem('profileViewUsername', username);
+                        // Show profile screen (assumes #profileScreen exists)
+                        document.getElementById('profileScreen').classList.remove('hidden');
+                        document.getElementById('challengesScreen').classList.add('hidden');
+                        // Optionally trigger a profile load if available
+                        if (typeof window.updateProfileScreen === 'function') {
+                            window.updateProfileScreen();
+                        }
+                    }
+                };
+            });
+        // In Progress
+        const inProgressCol = document.querySelector('.col-in-progress');
+        if (inProgressCol) {
+                inProgressCol.querySelectorAll('.challenge-card').forEach(e => e.remove());
+                const emptyMsgId = 'challenge-empty-msg';
+                const oldMsg = inProgressCol.querySelector(`#${emptyMsgId}`);
+                if (oldMsg) oldMsg.remove();
+                const inProgressCarousel = getOrCreateCarousel(inProgressCol);
+                // Add card button logic
+                const addBtn = inProgressCol.querySelector('.challenges-add-btn');
+                if (addBtn && !addBtn._wired) {
+                        addBtn.addEventListener('click', () => {
+                                openAddChallengeModal();
+                        });
+                        addBtn._wired = true;
+                }
+                if (inProgressChallenges.length === 0) {
+                        const msg = document.createElement('div');
+                        msg.id = emptyMsgId;
+                        msg.style.cssText = 'padding:32px 0;text-align:center;color:#fff;font-size:1.1rem;font-weight:600;';
+                        msg.textContent = 'No current challenges. Accept a challenge to progress!';
+                        inProgressCol.appendChild(msg);
+                } else {
+                        inProgressChallenges.forEach(chal => {
+                                const slide = document.createElement('div');
+                                slide.className = 'challenge-card-slide';
+                                const card = document.createElement('div');
+                                card.className = 'challenge-card';
+                                card.innerHTML = `
+                                    <div class="challenge-card-profile">
+                                        <img class="challenge-card-avatar" src="${chal.profile?.avatar_url || 'assets/images/App logo.png'}" alt=""/>
+                                        <span class="challenge-card-username">${chal.profile?.username || 'Hyperlink'}</span>
+                                    </div>
+                                    <div class="challenge-card-body"><b style="display:block;text-align:center;max-width:90%;margin:0 auto;">${chal.text.slice(0,40)}</b></div>
+                                    <div class="challenge-card-actions">
+                                        <button class="challenge-finish-btn" type="button" data-chalid="${chal.id}">Finish</button>
+                                        <button class="challenge-giveup-btn" type="button" data-chalid="${chal.id}">Give Up</button>
+                                    </div>`;
+                                slide.appendChild(card);
+                                inProgressCarousel.appendChild(slide);
+                        });
+                }
+        }
+// Modal for adding a challenge card
+function openAddChallengeModal() {
+    const modal = document.getElementById('addChallengeModal');
+    const backdrop = document.getElementById('addChallengeModalBackdrop');
+    const closeBtn = document.getElementById('addChallengeModalClose');
+    const saveBtn = document.getElementById('addChallengeModalSave');
+    const input = document.getElementById('addChallengeModalInput');
+    const avatar = document.getElementById('addChallengeModalAvatar');
+    const username = document.getElementById('addChallengeModalUsername');
+    const toggle = document.getElementById('addChallengeModalSwitch');
+    const toggleLabel = document.getElementById('addChallengeModalToggleLabel');
+    if (!modal || !backdrop) return;
+    // Set profile info (replace with real user info if available)
+    avatar.src = window.cachedAvatarUrl || 'assets/images/Profile Icon.png';
+    username.textContent = window.cachedUsername || 'You';
+    input.value = '';
+    toggle.checked = false;
+    toggleLabel.textContent = 'Do it solo';
+    // Show modal
+    modal.classList.remove('hidden');
+    backdrop.classList.remove('hidden');
+    input.focus();
+    // Toggle label logic
+    toggle.onchange = () => {
+        toggleLabel.textContent = toggle.checked ? 'Share with friends' : 'Do it solo';
+    };
+    // Save handler
+    saveBtn.onclick = () => {
+        const text = input.value.trim();
+        if (!text) {
+            input.focus();
+            return;
+        }
+        inProgressChallenges.push({
+            id: 'u' + Date.now(),
+            text,
+            type: toggle.checked ? 'friend' : 'user',
+            profile: { username: window.cachedUsername || 'You', avatar_url: window.cachedAvatarUrl || 'assets/images/Profile Icon.png' }
+        });
+        closeAddChallengeModal();
+        renderChallenges();
+    };
+    // Close logic
+    function closeAddChallengeModal() {
+        modal.classList.add('hidden');
+        backdrop.classList.add('hidden');
+    }
+    closeBtn.onclick = closeAddChallengeModal;
+    backdrop.onclick = closeAddChallengeModal;
+    // ESC key closes
+    document.onkeydown = function(e) {
+        if (!modal.classList.contains('hidden') && (e.key === 'Escape' || e.key === 'Esc')) closeAddChallengeModal();
+    };
+}
+    // Daily
+    const dailyCol = document.querySelector('.col-daily');
+        if (dailyCol) {
+                dailyCol.querySelectorAll('.challenge-card').forEach(e => e.remove());
+                dailyCol.querySelectorAll('.challenge-card-actions-row').forEach(e => e.remove());
+                const dailyEmptyMsgId = 'daily-challenge-empty-msg';
+                const oldDailyMsg = dailyCol.querySelector(`#${dailyEmptyMsgId}`);
+                if (oldDailyMsg) oldDailyMsg.remove();
+                const dailyCarousel = getOrCreateCarousel(dailyCol);
+                const dailyChallenges = availableChallenges.filter(c => c.type === 'daily');
+                if (dailyChallenges.length === 0) {
+                        const msg = document.createElement('div');
+                        msg.id = dailyEmptyMsgId;
+                        msg.style.cssText = 'padding:28px 0;text-align:center;color:#222;font-size:1rem;font-weight:700;';
+                        msg.textContent = 'Come back tomorrow for more daily challenges!';
+                        dailyCol.appendChild(msg);
+                } else {
+                dailyChallenges.forEach(chal => {
+                        const slide = document.createElement('div');
+                        slide.className = 'challenge-card-slide';
+                        const card = document.createElement('div');
+                        card.className = 'challenge-card';
+                        card.innerHTML = `
+                            <div class="challenge-card-profile">
+                                <img class="challenge-card-avatar" src="${chal.profile?.avatar_url || 'assets/images/App logo.png'}" alt=""/>
+                                <span class="challenge-card-username">${chal.profile?.username || 'Hyperlink'}</span>
+                            </div>
+                            <div class="challenge-card-body"><b style="display:block;text-align:center;max-width:90%;margin:0 auto;">${chal.text.slice(0,40)}</b></div>
+                        `;
+                        dailyCol.appendChild(card);
+                        // Actions row below card
+                        const actionsRow = document.createElement('div');
+                        actionsRow.className = 'challenge-card-actions-row';
+                        actionsRow.style.cssText = 'display:flex;gap:0.5em;justify-content:center;margin-bottom:18px;';
+                        actionsRow.innerHTML = `
+                                <button class="challenge-accept-btn" type="button" data-chalid="${chal.id}">Accept</button>
+                                <button class="challenge-deny-btn" type="button" data-chalid="${chal.id}">Deny</button>
+                        `;
+                        slide.appendChild(card);
+                        slide.appendChild(actionsRow);
+                        dailyCarousel.appendChild(slide);
+                });
+                }
+        }
+        // Friends
+        const friendsCol = document.querySelector('.col-friends');
+        if (friendsCol) {
+            friendsCol.querySelectorAll('.challenge-card').forEach(e => e.remove());
+            friendsCol.querySelectorAll('.challenge-card-actions-row').forEach(e => e.remove());
+            const friendsCarousel = getOrCreateCarousel(friendsCol);
+            // Remove any previous empty message
+            const emptyMsgId = 'friends-challenge-empty-msg';
+            const oldMsg = friendsCol.querySelector(`#${emptyMsgId}`);
+            if (oldMsg) oldMsg.remove();
+            const friendChallenges = availableChallenges.filter(c => c.type === 'friend');
+            if (friendChallenges.length === 0) {
+                const msg = document.createElement('div');
+                msg.id = emptyMsgId;
+                msg.style.cssText = 'padding:32px 0;text-align:center;color:#fff;font-size:1.1rem;font-weight:600;';
+                msg.textContent = 'Wait for your friends to give you a challenge!';
+                friendsCol.appendChild(msg);
+            } else {
+                friendChallenges.forEach(chal => {
+                    const slide = document.createElement('div');
+                    slide.className = 'challenge-card-slide';
+                    const card = document.createElement('div');
+                    card.className = 'challenge-card';
+                    card.innerHTML = `
+                        <div class="challenge-card-profile">
+                            <img class="challenge-card-avatar" src="${chal.profile?.avatar_url || 'assets/images/App logo.png'}" alt=""/>
+                            <span class="challenge-card-username">${chal.profile?.username || 'Hyperlink'}</span>
+                        </div>
+                        <div class="challenge-card-body"><b style="display:block;text-align:center;max-width:90%;margin:0 auto;">${chal.text.slice(0,40)}</b></div>
+                    `;
+                    friendsCol.appendChild(card);
+                    // Actions row below card
+                    const actionsRow = document.createElement('div');
+                    actionsRow.className = 'challenge-card-actions-row';
+                    actionsRow.style.cssText = 'display:flex;gap:0.5em;justify-content:center;margin-bottom:18px;';
+                    actionsRow.innerHTML = `
+                        <button class="challenge-accept-btn" type="button" data-chalid="${chal.id}">Accept</button>
+                        <button class="challenge-deny-btn" type="button" data-chalid="${chal.id}">Deny</button>
+                    `;
+                    slide.appendChild(card);
+                    slide.appendChild(actionsRow);
+                    friendsCarousel.appendChild(slide);
+                });
+            }
+        }
+    // Add Accept listeners
+    document.querySelectorAll('.challenge-accept-btn').forEach(btn => {
+        btn.onclick = function() {
+            const id = btn.getAttribute('data-chalid');
+            const idx = availableChallenges.findIndex(c => c.id === id);
+            if (idx !== -1) {
+                inProgressChallenges.push(availableChallenges[idx]);
+                availableChallenges.splice(idx, 1);
+                persistDailyChallengeState(getTodayChallengeKey());
+                renderChallenges();
+            }
+        };
+    });
+    document.querySelectorAll('.challenge-deny-btn').forEach(btn => {
+        btn.onclick = function() {
+            const id = btn.getAttribute('data-chalid');
+            const idx = availableChallenges.findIndex(c => c.id === id);
+            if (idx !== -1) {
+                availableChallenges.splice(idx, 1);
+                persistDailyChallengeState(getTodayChallengeKey());
+                renderChallenges();
+            }
+        };
+    });
+    document.querySelectorAll('.challenge-finish-btn').forEach(btn => {
+        btn.onclick = function() {
+            const id = btn.getAttribute('data-chalid');
+            const idx = inProgressChallenges.findIndex(c => c.id === id);
+            if (idx === -1) {
+                return;
+            }
+
+            const completed = inProgressChallenges[idx];
+            inProgressChallenges.splice(idx, 1);
+
+            // Finishing a challenge turns it into a new chain dog tag.
+            addDogTagWithTitle(completed.text);
+            renderChallenges();
+        };
+    });
+    document.querySelectorAll('.challenge-giveup-btn').forEach(btn => {
+        btn.onclick = function() {
+            const id = btn.getAttribute('data-chalid');
+            const idx = inProgressChallenges.findIndex(c => c.id === id);
+            if (idx !== -1) {
+                inProgressChallenges.splice(idx, 1);
+                renderChallenges();
+            }
+        };
+    });
+}
 // threeApp.js - Handles 3D app initialization and splash
 
 import * as THREE from "three";
@@ -23,6 +390,10 @@ let linkSpacing = 0.5;
 let linkHalfHeight = 0.5;
 let selectedTagId = null;
 let isRestoring = false;
+
+// Store user info for challenge modal
+window.cachedUsername = null;
+window.cachedAvatarUrl = null;
 let zoomMinZ = 4;
 let zoomMaxZ = 4;
 let cameraMinY = -1;
@@ -33,20 +404,22 @@ let cachedJoinedAt = null;
 
 export function initialize3DApp() {
     // Cache the user's real join date directly from the auth session
-    supabase.auth.getUser().then(({ data: { user } }) => {
+
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
         if (!user?.created_at) return;
         cachedJoinedAt = user.created_at;
-        // Load avatar from the server
-        return supabase
+        // Load avatar and username from the server
+        const { data, error } = await supabase
             .from('profiles')
-            .select('avatar_url')
+            .select('avatar_url, username')
             .eq('id', user.id)
             .single();
-    }).then(result => {
-        if (result?.data?.avatar_url) {
-            cachedAvatarUrl = result.data.avatar_url;
+        if (data) {
+            window.cachedAvatarUrl = data.avatar_url || 'assets/images/Profile Icon.png';
+            window.cachedUsername = data.username || 'You';
+            cachedAvatarUrl = data.avatar_url;
             document.querySelectorAll('.profile-hero-avatar').forEach(img => {
-                img.src = cachedAvatarUrl;
+                img.src = window.cachedAvatarUrl;
             });
         }
         updateProfileScreen();
@@ -100,6 +473,8 @@ export function initialize3DApp() {
     const profileBtn = document.getElementById("profileBtn");
     const milestonesBtn = document.getElementById("milestonesBtn");
     const profileScreen = document.getElementById("profileScreen");
+    const challengesScreen = document.getElementById("challengesScreen");
+    const challengesPanelShell = document.querySelector(".challenges-panel-shell");
     const friendsSearchInput = document.getElementById("friendsSearchInput");
     const friendsGrid = document.getElementById("friendsGrid");
     const friendsEmptyState = document.getElementById("friendsEmptyState");
@@ -118,6 +493,49 @@ export function initialize3DApp() {
     const addFriendBtn = document.getElementById("addFriendBtn");
     const blockUserBtn = document.getElementById("blockUserBtn");
     const friendStatusTag = document.getElementById("friendStatusTag");
+
+    let challengeNudgeTimeoutId = null;
+    let challengeLastScrollTop = 0;
+    let challengeWasScrollingDown = false;
+
+    function triggerChallengeRowNudge() {
+        if (!challengesScreen || challengesScreen.classList.contains("hidden") || window.innerWidth > 600) {
+            return;
+        }
+
+        const carousels = challengesScreen.querySelectorAll(".challenge-card-carousel");
+        carousels.forEach((row) => {
+            row.classList.remove("nudge-once");
+            // Restart animation cleanly for repeated nudges.
+            void row.offsetWidth;
+            row.classList.add("nudge-once");
+        });
+    }
+
+    function onChallengesPanelScroll() {
+        if (!challengesPanelShell) {
+            return;
+        }
+
+        const currentTop = challengesPanelShell.scrollTop;
+        challengeWasScrollingDown = currentTop > challengeLastScrollTop;
+        challengeLastScrollTop = currentTop;
+
+        if (challengeNudgeTimeoutId) {
+            window.clearTimeout(challengeNudgeTimeoutId);
+        }
+
+        challengeNudgeTimeoutId = window.setTimeout(() => {
+            if (challengeWasScrollingDown) {
+                triggerChallengeRowNudge();
+            }
+            challengeWasScrollingDown = false;
+        }, 180);
+    }
+
+    if (challengesPanelShell) {
+        challengesPanelShell.addEventListener("scroll", onChallengesPanelScroll, { passive: true });
+    }
     
     // Cached avatar URL for the current logged-in user
     let cachedAvatarUrl = null;
@@ -623,6 +1041,7 @@ export function initialize3DApp() {
     
     function openEchoModal() {
         closeProfileScreen();
+        closeChallengesScreen();
         setActiveMenuButton(null);
         toggleMenu(false);
         const modal = document.getElementById("echoModal");
@@ -931,8 +1350,9 @@ export function initialize3DApp() {
         if (editBtnEl) profileNameHeading.appendChild(editBtnEl);
     
         const savedTags = dogTagManager?.serialize?.() || [];
-        const totalLinks = savedTags.length;
-        const chainLengthInches = Math.max(chainLinks.length, totalLinks) * 1.5;
+        // Use chainLinks.length for total links (matches the actual chain)
+        const totalLinks = chainLinks.length;
+        const chainLengthInches = totalLinks * 1.5;
         const recentTitles = savedTags.length > 0
             ? savedTags.slice(0, 2).map((entry) => entry.title)
             : ["Finished a workout", "Went on a walk"];
@@ -1002,7 +1422,7 @@ export function initialize3DApp() {
                     } catch { friendTags = []; }
                 }
                 const friendTitles = Array.isArray(friendTags)
-                    ? friendTags.slice(0, 5).map(t => t.title || 'Untitled')
+                    ? friendTags.slice(0, 2).map(t => t.title || 'Untitled')
                     : [];
                 renderRecentLinks(isBlockedUser ? [] : friendTitles);
 
@@ -1010,6 +1430,10 @@ export function initialize3DApp() {
                 const profileHeroAvatar = document.querySelector('.profile-hero-avatar');
                 if (profileHeroAvatar) profileHeroAvatar.src = friendAvatar || 'assets/images/Profile Icon.png';
                 profileScreen?.classList.add('is-viewing-other');
+
+                // Show profile actions synchronously so layout is stable before the slide-in animation.
+                // updateFriendStatusUI is async and fine-tunes button states after.
+                if (profileActions) profileActions.classList.remove('hidden');
 
                 // Update friend status UI for this profile
                 if (currentViewingUserId) updateFriendStatusUI(currentViewingUserId);
@@ -1051,6 +1475,7 @@ export function initialize3DApp() {
     
         closeSettings();
         closeEchoModal();
+        closeChallengesScreen();
         currentViewingUserId = null;
         updateProfileScreen();
         profileScreen.classList.remove("hidden");
@@ -1102,6 +1527,84 @@ export function initialize3DApp() {
         setActiveMenuButton(null);
     }
     
+    function openChallengesScreen() {
+        if (!challengesScreen) return;
+        closeProfileScreen();
+        closeSettings();
+        closeEchoModal();
+        challengesScreen.classList.remove("hidden");
+        document.body.classList.add("challenges-open");
+        shouldRenderScene = false;
+        toggleMenu(true);
+        setActiveMenuButton(milestonesBtn);
+        populateLeaderboard();
+        renderChallenges();
+    }
+    
+    async function populateLeaderboard() {
+        const container = document.querySelector('.leaderboard-cards');
+        if (!container) return;
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username, chain_count')
+            .order('chain_count', { ascending: false })
+            .limit(3);
+        if (error || !data) return;
+        // Get previous leaderboard order from window
+        const prevOrder = window.lastLeaderboardOrder || [];
+        const newOrder = data.map(p => p?.id || null);
+        // Compute rank changes
+        let rankChange = [0, 0, 0]; // 1=up, -1=down, 0=same/new
+        if (prevOrder.length === 3) {
+            for (let i = 0; i < 3; ++i) {
+                const id = newOrder[i];
+                if (!id) continue;
+                const prevIdx = prevOrder.indexOf(id);
+                if (prevIdx === -1) continue; // new to leaderboard
+                if (prevIdx > i) rankChange[i] = 1; // moved up
+                else if (prevIdx < i) rankChange[i] = -1; // moved down
+            }
+        }
+        // Save new order for next time
+        window.lastLeaderboardOrder = newOrder;
+        // Update cards
+        const cards = container.querySelectorAll('.leaderboard-card');
+        cards.forEach((card, i) => {
+            const profile = data[i];
+            const rankEl = card.querySelector('.leaderboard-card-rank');
+            const linksEl = card.querySelector('.leaderboard-card-links');
+            const arrowUp = card.querySelector('.leaderboard-rank-arrow.up');
+            const arrowDown = card.querySelector('.leaderboard-rank-arrow.down');
+            // Hide both arrows by default
+            if (arrowUp) arrowUp.style.display = 'none';
+            if (arrowDown) arrowDown.style.display = 'none';
+            if (profile) {
+                if (rankEl) rankEl.textContent = `${i + 1}. ${profile.username ?? 'Unknown'}`;
+                if (linksEl) linksEl.textContent = `${profile.chain_count ?? 0} Links`;
+                if (rankChange[i] === 1 && arrowUp) arrowUp.style.display = '';
+                if (rankChange[i] === -1 && arrowDown) arrowDown.style.display = '';
+            } else {
+                if (rankEl) rankEl.textContent = `${i + 1}. —`;
+                if (linksEl) linksEl.textContent = '0 Links';
+            }
+        });
+    }
+    
+    function closeChallengesScreen() {
+        if (!challengesScreen) return;
+        challengesScreen.classList.add("hidden");
+        document.body.classList.remove("challenges-open");
+        shouldRenderScene = true;
+        updateCameraVerticalLimits();
+        updateDogTagViewMode();
+        renderer.render(scene, camera);
+        setActiveMenuButton(null);
+    }
+    
+    function isChallengesScreenOpen() {
+        return !!challengesScreen && !challengesScreen.classList.contains("hidden");
+    }
+
     if (friendsSearchInput) {
         friendsSearchInput.addEventListener("input", filterFriendsGrid);
     }
@@ -1130,10 +1633,24 @@ export function initialize3DApp() {
         friendsGrid.addEventListener("click", (event) => {
             const selectedCard = event.target.closest(".friend-card");
             if (!selectedCard) return;
-    
+
+            // Block navigation while in edit mode — shake avatar and nameplate instead
+            if (profileScreen && profileScreen.classList.contains('edit-mode')) {
+                const avatar = selectedCard.querySelector('.friend-avatar');
+                const name = selectedCard.querySelector('.friend-name');
+                [avatar, name].forEach(el => {
+                    if (!el) return;
+                    el.classList.remove('is-shaking');
+                    void el.offsetWidth; // reflow to restart animation
+                    el.classList.add('is-shaking');
+                    el.addEventListener('animationend', () => el.classList.remove('is-shaking'), { once: true });
+                });
+                return;
+            }
+
             // Highlight only the clicked card
             friendsGrid.querySelectorAll(".friend-card").forEach(card => card.classList.toggle("is-featured", card === selectedCard));
-    
+
             // Show friend info with animation
             showProfileInfo(selectedCard);
         });
@@ -1180,10 +1697,12 @@ export function initialize3DApp() {
     
     if (milestonesBtn) {
         milestonesBtn.onclick = () => {
-            closeProfileScreen();
-            setActiveMenuButton(null);
-            setStatus("Milestones and achievements menu coming soon.");
-            toggleMenu(false);
+            if (isChallengesScreenOpen()) {
+                closeChallengesScreen();
+                toggleMenu(false);
+                return;
+            }
+            openChallengesScreen();
         };
     }
     
@@ -1203,9 +1722,10 @@ export function initialize3DApp() {
                 scene.remove(removedLink);
             }
     
-            dogTagManager.refreshAttachments();
             chainInteraction.rebuildFromLinks();
             chainInteraction.applyToLinks();
+            // Re-attach after link rotations are re-derived for the new indices.
+            dogTagManager.refreshAttachments();
             updateZoomLimits();
             updateCameraVerticalLimits();
             setStatus(`Chain links: ${chainLinks.length}`);

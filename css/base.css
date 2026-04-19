@@ -1,0 +1,228 @@
+﻿/* Global hidden utility class */
+.hidden {
+  display: none !important;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Mono";
+    src: url("../assets/fonts/FoundersGroteskMonoLight.otf") format("opentype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Mono";
+    src: url("../assets/fonts/FoundersGroteskMonoRegular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Mono";
+    src: url("../assets/fonts/FoundersGroteskMonoMedium.otf") format("opentype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Mono";
+    src: url("../assets/fonts/FoundersGroteskMonoDemiBold.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Mono";
+    src: url("../assets/fonts/FoundersGroteskMonoBold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Text";
+    src: url("../assets/fonts/FoundersGroteskText-Regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Text";
+    src: url("../assets/fonts/FoundersGroteskText-Medium.otf") format("opentype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Text";
+    src: url("../assets/fonts/FoundersGroteskText-Semibold.otf") format("opentype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Founders Grotesk Text";
+    src: url("../assets/fonts/FoundersGroteskText-Bold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #ffffff;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    -webkit-text-size-adjust: 100%;
+}
+
+:root {
+    --app-height: 100vh;
+    --hotbar-size: clamp(44px, 11vw, 52px);
+    --hotbar-gap: clamp(8px, 1.4vh, 10px);
+    --hotbar-radius: 12px;
+    --hotbar-border-width: 3px;
+    --hotbar-surface:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(0, 0, 0, 0.12) 100%),
+        url("../assets/images/metal sheet.jpeg") center center / cover no-repeat;
+    --hotbar-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -8px 12px rgba(0, 0, 0, 0.18),
+        0 5px 10px rgba(0, 0, 0, 0.08);
+    --profile-yellow: #f4d900;
+    --profile-page-surface:
+        url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
+    --profile-metal-surface:
+        url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
+    --profile-stripe-surface:
+        url("../assets/images/yellow striped texture.jpg") center center / cover no-repeat;
+    --profile-card-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+    --profile-summary-main-offset-x: 30px;
+}
+
+button {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    z-index: 2;
+    padding: 12px 24px;
+    margin-right: 10px;
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 700;
+    font-style: normal;
+    color: #000000;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+button:hover,
+.modal-buttons button:hover,
+.close-button:hover {
+    background: #f2f2f2;
+}
+
+button:hover,
+button:focus-visible,
+.modal-buttons button:focus-visible,
+.close-button:focus-visible,
+#zoomSlider:focus-visible,
+.modal-field input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1.5px #000000;
+}
+
+/* Left menu */
+.button-icon-stack {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#settingsBtnIcon,
+#addEchoIcon,
+#profileBtnIcon,
+#milestonesBtnIcon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.18);
+    transform-origin: center;
+}
+
+#settingsBtnIcon,
+#profileBtnIcon {
+    transform: scale(1.28);
+}
+
+#addEchoIcon {
+    transform: scale(1.08);
+}
+
+#milestonesBtnIcon {
+    transform: scale(1.4);
+}
+
+#addEchoOverlay {
+    position: absolute;
+    inset: -6%;
+    width: 112%;
+    height: 112%;
+    object-fit: contain;
+    pointer-events: none;
+    transform: translate(-1%, -2%) scale(0.74);
+    transform-origin: center;
+    z-index: 1;
+}
+
+body.ui-hidden #menuToggleBtn {
+    opacity: 0.2;
+}
+
+body.ui-hidden #zoomControl,
+body.ui-hidden #removeTagBtn,
+body.ui-hidden #statusMessage {
+    display: none !important;
+}
+
+body.profile-open #chainCanvas {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+body.profile-open #statusMessage,
+body.profile-open #removeTagBtn {
+    display: none !important;
+}
+
+#uiControls .menu-icon-button.is-active {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.18) 100%),
+        url("../assets/images/Dark metal sheet.jpg") center center / cover no-repeat;
+    box-shadow: var(--hotbar-shadow), 0 0 0 1.5px #000000;
+}
+

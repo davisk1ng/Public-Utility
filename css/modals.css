@@ -1,0 +1,517 @@
+﻿/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 7px;
+    padding: 24px;
+    width: min(360px, calc(100vw - 32px));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    box-sizing: border-box;
+}
+
+.modal-field {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-field label {
+    font-size: 17px;
+    margin-bottom: 6px;
+    color: #111;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.modal-field input {
+    padding: 10px 12px;
+    border: 1px solid #000000;
+    border-radius: 5px;
+    font-size: 17px;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.input-with-count {
+    position: relative;
+    width: 100%;
+}
+
+#titleCharCount {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: right;
+    color: #8a8a8a;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+#titleInput {
+    padding-right: 56px;
+}
+
+.modal-field textarea {
+    padding: 10px 12px;
+    border: 1px solid #000000;
+    border-radius: 5px;
+    font-size: 17px;
+    min-height: 140px;
+    resize: vertical;
+    font-family: "Founders Grotesk Mono", monospace;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    margin-top: 18px;
+}
+
+/* â”€â”€ Avatar Crop Modal â”€â”€ */
+
+.crop-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.crop-modal.hidden { display: none; }
+
+.crop-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.62);
+}
+
+.crop-modal-dialog {
+    position: relative;
+    width: min(80vw, 340px);
+    max-height: 90vh;
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    box-sizing: border-box;
+}
+
+.crop-modal-title {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #eee;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.crop-viewport {
+    position: relative;
+    width: 100%;
+    max-height: min(55vw, 260px);
+    aspect-ratio: 1 / 1;
+    flex-shrink: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+    touch-action: none;
+    cursor: grab;
+}
+.crop-viewport:active { cursor: grabbing; }
+
+.crop-viewport canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.crop-circle-guide {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    pointer-events: none;
+}
+
+.crop-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 0 4px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.crop-zoom-label {
+    color: #aaa;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+}
+
+.crop-zoom-slider {
+    flex: 1;
+    width: 100%;
+    accent-color: #f4d900;
+    height: 6px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #555;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.crop-zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    border: 2px solid #111;
+}
+
+.crop-zoom-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    border: 2px solid #111;
+}
+
+.crop-zoom-slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #555;
+}
+
+.crop-zoom-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #555;
+}
+
+.crop-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.crop-btn {
+    position: static;
+    bottom: auto;
+    left: auto;
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.crop-btn-cancel {
+    background: #333;
+    color: #ccc;
+}
+.crop-btn-cancel:hover { background: #444; }
+
+.crop-btn-confirm {
+    background: #ffffff;
+    color: #111;
+}
+.crop-btn-confirm:hover { background: #e6e6e6; }
+
+.modal-buttons button {
+    position: static;
+    padding: 10px 19px;
+    margin-right: 0;
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+/* Overlay for Hero Card */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+}
+
+.overlay.hidden {
+    display: none;
+}
+
+/* Settings overlay fades instead of snapping */
+#settingsOverlay {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+#settingsOverlay.hidden {
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Hero preview overlay sits above the settings button */
+#heroPreviewOverlay {
+    z-index: 1009;
+}
+
+/* Dog tag preview stage â€” transparent full-viewport canvas, no window chrome */
+.hero-preview-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--app-height);
+    overflow: hidden;
+    z-index: 1010;
+    background: transparent;
+}
+
+@supports (height: 100dvh) {
+    :root {
+        --app-height: 100dvh;
+    }
+}
+
+.hero-preview-stage.hidden {
+    display: none;
+}
+
+#heroPreviewCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.hero-flip-hint {
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-size: 1rem;
+    text-align: center;
+    pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    margin: 0;
+}
+
+.hero-preview-close {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    right: calc(env(safe-area-inset-right, 0px) + 18px);
+    left: auto;
+    bottom: auto;
+    z-index: 1011;
+    background: rgba(255, 255, 255, 0.92);
+    width: auto;
+    padding: 14px 24px;
+}
+
+.close-button {
+    position: static;
+    align-self: center;
+    padding: 14px 36px;
+    background: #ffffff;
+    border: 2px solid #000000;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 19px;
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    button {
+        min-height: 48px;
+    }
+
+    #uiControls {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
+        gap: 8px;
+    }
+
+    :root {
+        --hotbar-size: 52px;
+        --hotbar-gap: 10px;
+    }
+
+    #menuToggleBtn .menuToggleLine {
+        height: 3px;
+        margin: 2px 0;
+    }
+
+    #menuToggleBtn.is-open .menuToggleLine:nth-child(1) {
+        transform: translateY(7px) rotate(45deg);
+    }
+
+    #menuToggleBtn.is-open .menuToggleLine:nth-child(3) {
+        transform: translateY(-7px) rotate(-45deg);
+    }
+
+    #removeTagBtn {
+        font-size: 13px;
+        padding: 8px 12px;
+        min-height: 40px;
+    }
+
+    #zoomControl {
+        min-height: 180px;
+        margin: 16px 0 18px;
+    }
+
+    .zoomSign {
+        font-size: 14px;
+    }
+
+    #zoomSlider {
+        width: 160px;
+        height: calc(var(--hotbar-size) - 2px);
+    }
+
+    #zoomSlider::-webkit-slider-runnable-track {
+        width: 160px;
+        height: calc(var(--hotbar-size) - 6px);
+        background: transparent;
+    }
+
+    #zoomSlider::-moz-range-track {
+        width: 160px;
+        height: calc(var(--hotbar-size) - 6px);
+        background: transparent;
+    }
+
+    #zoomSlider::-webkit-slider-thumb {
+        width: 36px;
+        height: calc(var(--hotbar-size) + 2px);
+        margin-top: 0;
+        background: url("../assets/images/Thumb%20Slider.svg") center center / 116% auto no-repeat;
+        border-radius: 9px;
+        box-sizing: border-box;
+        transform: rotate(90deg) scale(1.9);
+        transform-origin: center;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
+    }
+
+    #zoomSlider::-moz-range-thumb {
+        width: 36px;
+        height: calc(var(--hotbar-size) + 2px);
+        background: url("../assets/images/Thumb%20Slider.svg") center center / 116% auto no-repeat;
+        border-radius: 9px;
+        box-sizing: border-box;
+        transform: rotate(90deg) scale(1.9);
+        transform-origin: center;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.28));
+    }
+
+    #zoomSlider::-moz-range-progress {
+        height: calc(var(--hotbar-size) - 6px);
+        background: transparent;
+    }
+
+    #statusMessage {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        right: calc(env(safe-area-inset-right, 0px) + 12px);
+        left: auto;
+        max-width: min(62vw, 280px);
+        font-size: 18px;
+        text-align: right;
+        pointer-events: none;
+    }
+
+    #settingsBody {
+        width: min(100%, 320px);
+    }
+
+    #settingsBody button {
+        width: 100%;
+    }
+
+    .modal-content {
+        padding: 18px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+        justify-content: stretch;
+    }
+
+    .modal-buttons button {
+        width: 100%;
+    }
+
+    .hero-preview-close {
+        padding: 12px 18px;
+        min-height: 48px;
+    }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    #uiControls {
+        top: calc(env(safe-area-inset-top, 0px) + 16px);
+        left: calc(env(safe-area-inset-left, 0px) + 16px);
+    }
+
+    #zoomControl {
+        width: var(--hotbar-size);
+    }
+
+    #statusMessage {
+        top: calc(env(safe-area-inset-top, 0px) + 14px);
+        right: calc(env(safe-area-inset-right, 0px) + 14px);
+        font-size: 22px;
+    }
+}
