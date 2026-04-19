@@ -1,4 +1,4 @@
-# Private-Utility
+# Public-Utility
 
 This page loads `assets/models/Chain.glb` with Three.js.
 
