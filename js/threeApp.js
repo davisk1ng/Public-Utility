@@ -17,9 +17,75 @@ const DAILY_CHALLENGE_POOL = [
     "Practice a skill for 25 minutes",
 ];
 const DAILY_CHALLENGE_COUNT = 6;
-const DAILY_CHALLENGE_STORAGE_KEY = "dailyChallengeStateV1";
+const CHALLENGE_STATE_STORAGE_KEY_PREFIX = "challengeStateV2";
 let availableChallenges = [];
 let inProgressChallenges = [];
+let challengeStorageUserId = null;
+
+function normalizeStoredChallenge(challenge) {
+    if (!challenge || typeof challenge !== "object") {
+        return null;
+    }
+
+    if (typeof challenge.id !== "string" || typeof challenge.text !== "string" || typeof challenge.type !== "string") {
+        return null;
+    }
+
+    return {
+        id: challenge.id,
+        text: challenge.text.slice(0, 40),
+        type: challenge.type,
+        profile: challenge.profile && typeof challenge.profile === "object"
+            ? {
+                username: typeof challenge.profile.username === "string" ? challenge.profile.username : "Hyperlink",
+                avatar_url: typeof challenge.profile.avatar_url === "string" ? challenge.profile.avatar_url : "assets/images/App logo.png",
+            }
+            : undefined,
+    };
+}
+
+function getChallengeStorageKey(userId) {
+    return `${CHALLENGE_STATE_STORAGE_KEY_PREFIX}:${userId || "anonymous"}`;
+}
+
+async function ensureChallengeStorageUser() {
+    if (challengeStorageUserId) {
+        return challengeStorageUserId;
+    }
+
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        challengeStorageUserId = user?.id || "anonymous";
+    } catch {
+        challengeStorageUserId = "anonymous";
+    }
+
+    return challengeStorageUserId;
+}
+
+function getStoredChallengeState(userId) {
+    const storageKey = getChallengeStorageKey(userId);
+    try {
+        const parsed = JSON.parse(localStorage.getItem(storageKey) || "null");
+        return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+async function loadChallengeStateForCurrentUser() {
+    const userId = await ensureChallengeStorageUser();
+    const stored = getStoredChallengeState(userId);
+    const nonDaily = Array.isArray(stored?.availableNonDaily)
+        ? stored.availableNonDaily.map(normalizeStoredChallenge).filter(Boolean)
+        : [];
+    const inProgress = Array.isArray(stored?.inProgress)
+        ? stored.inProgress.map(normalizeStoredChallenge).filter(Boolean)
+        : [];
+
+    availableChallenges = nonDaily;
+    inProgressChallenges = inProgress;
+}
 
 function getTodayChallengeKey() {
     const now = new Date();
@@ -44,13 +110,26 @@ function buildDailyChallengesForDate(dateKey) {
     return challenges;
 }
 
-function persistDailyChallengeState(dateKey) {
+function persistChallengeState(dateKey) {
+    if (!challengeStorageUserId) {
+        return;
+    }
     const remainingDailyIds = availableChallenges
         .filter((challenge) => challenge.type === "daily")
         .map((challenge) => challenge.id);
+
+    const availableNonDaily = availableChallenges
+        .filter((challenge) => challenge.type !== "daily")
+        .map(normalizeStoredChallenge)
+        .filter(Boolean);
+
+    const inProgress = inProgressChallenges
+        .map(normalizeStoredChallenge)
+        .filter(Boolean);
+
     localStorage.setItem(
-        DAILY_CHALLENGE_STORAGE_KEY,
-        JSON.stringify({ dateKey, remainingDailyIds })
+        getChallengeStorageKey(challengeStorageUserId),
+        JSON.stringify({ dateKey, remainingDailyIds, availableNonDaily, inProgress })
     );
 }
 
@@ -59,12 +138,7 @@ function ensureDailyChallengesForToday() {
     const allDailyForToday = buildDailyChallengesForDate(todayKey);
     const idsForToday = new Set(allDailyForToday.map((challenge) => challenge.id));
 
-    let stored = null;
-    try {
-        stored = JSON.parse(localStorage.getItem(DAILY_CHALLENGE_STORAGE_KEY) || "null");
-    } catch {
-        stored = null;
-    }
+    const stored = challengeStorageUserId ? getStoredChallengeState(challengeStorageUserId) : null;
 
     const remainingIds = stored?.dateKey === todayKey && Array.isArray(stored.remainingDailyIds)
         ? stored.remainingDailyIds.filter((id) => idsForToday.has(id))
@@ -75,15 +149,25 @@ function ensureDailyChallengesForToday() {
     const remainingDailyChallenges = allDailyForToday.filter((challenge) => remainingIdSet.has(challenge.id));
     availableChallenges = [...nonDailyChallenges, ...remainingDailyChallenges];
 
-    localStorage.setItem(
-        DAILY_CHALLENGE_STORAGE_KEY,
-        JSON.stringify({ dateKey: todayKey, remainingDailyIds: remainingIds })
-    );
+    persistChallengeState(todayKey);
 }
 
-ensureDailyChallengesForToday();
+ensureChallengeStorageUser()
+    .then(loadChallengeStateForCurrentUser)
+    .then(() => ensureDailyChallengesForToday())
+    .catch(() => {});
 
 function renderChallenges() {
+                if (!challengeStorageUserId) {
+                    ensureChallengeStorageUser()
+                        .then(loadChallengeStateForCurrentUser)
+                        .then(() => {
+                            ensureDailyChallengesForToday();
+                            renderChallenges();
+                        })
+                        .catch(() => {});
+                    return;
+                }
                 const getOrCreateCarousel = (column) => {
                     let carousel = column.querySelector('.challenge-card-carousel');
                     if (!carousel) {
@@ -210,6 +294,7 @@ function openAddChallengeModal() {
             type: toggle.checked ? 'friend' : 'user',
             profile: { username: window.cachedUsername || 'You', avatar_url: window.cachedAvatarUrl || 'assets/images/Profile Icon.png' }
         });
+        persistChallengeState(getTodayChallengeKey());
         closeAddChallengeModal();
         renderChallenges();
     };
@@ -236,11 +321,11 @@ function openAddChallengeModal() {
                 const dailyCarousel = getOrCreateCarousel(dailyCol);
                 const dailyChallenges = availableChallenges.filter(c => c.type === 'daily');
                 if (dailyChallenges.length === 0) {
-                        const msg = document.createElement('div');
-                        msg.id = dailyEmptyMsgId;
-                        msg.style.cssText = 'padding:28px 0;text-align:center;color:#222;font-size:1rem;font-weight:700;';
-                        msg.textContent = 'Come back tomorrow for more daily challenges!';
-                        dailyCol.appendChild(msg);
+                    const msg = document.createElement('div');
+                    msg.id = dailyEmptyMsgId;
+                    msg.style.cssText = 'padding:28px 0;text-align:center;color:#fff;font-size:1rem;font-weight:700;';
+                    msg.textContent = 'Come back tomorrow for more daily challenges!';
+                    dailyCol.appendChild(msg);
                 } else {
                 dailyChallenges.forEach(chal => {
                         const slide = document.createElement('div');
@@ -322,7 +407,7 @@ function openAddChallengeModal() {
             if (idx !== -1) {
                 inProgressChallenges.push(availableChallenges[idx]);
                 availableChallenges.splice(idx, 1);
-                persistDailyChallengeState(getTodayChallengeKey());
+                persistChallengeState(getTodayChallengeKey());
                 renderChallenges();
             }
         };
@@ -333,7 +418,7 @@ function openAddChallengeModal() {
             const idx = availableChallenges.findIndex(c => c.id === id);
             if (idx !== -1) {
                 availableChallenges.splice(idx, 1);
-                persistDailyChallengeState(getTodayChallengeKey());
+                persistChallengeState(getTodayChallengeKey());
                 renderChallenges();
             }
         };
@@ -348,6 +433,7 @@ function openAddChallengeModal() {
 
             const completed = inProgressChallenges[idx];
             inProgressChallenges.splice(idx, 1);
+            persistChallengeState(getTodayChallengeKey());
 
             // Finishing a challenge turns it into a new chain dog tag.
             addDogTagWithTitle(completed.text);
@@ -360,6 +446,7 @@ function openAddChallengeModal() {
             const idx = inProgressChallenges.findIndex(c => c.id === id);
             if (idx !== -1) {
                 inProgressChallenges.splice(idx, 1);
+                persistChallengeState(getTodayChallengeKey());
                 renderChallenges();
             }
         };
