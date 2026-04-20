@@ -699,6 +699,12 @@ export function initialize3DApp() {
                 toggleMenu(false);
                 return;
             }
+
+            if (isChallengesScreenOpen()) {
+                closeChallengesScreen();
+                toggleMenu(false);
+                return;
+            }
     
             toggleMenu();
         });
@@ -1128,6 +1134,7 @@ export function initialize3DApp() {
     document.getElementById("addEcho").onclick = openEchoModal;
     
     function openEchoModal() {
+        closeSettings();
         closeProfileScreen();
         closeChallengesScreen();
         setActiveMenuButton(null);
@@ -2188,6 +2195,7 @@ export function initialize3DApp() {
     
     function openSettingsScreen() {
         closeProfileScreen();
+        closeChallengesScreen();
         toggleMenu(false);
         setActiveMenuButton(settingsBtn);
         document.getElementById("settingsOverlay").classList.remove("hidden");
