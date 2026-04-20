@@ -641,6 +641,7 @@ export function initialize3DApp() {
     let isUiHidden = false;
     let isMenuOpen = true;
     let shouldRenderScene = true;
+    let hasRunSplashPreload = false;
     
     let isTouchScrolling = false;
     let activeTouchScrollId = null;
@@ -658,11 +659,11 @@ export function initialize3DApp() {
     });
     
     init();
-    loadAssets();
-    
     restoreUiVisibilityPreference();
     applyMenuState();
     updateProfileScreen();
+    preloadAppScreensDuringSplash();
+    loadAssets();
     
     function hideSplashScreen() {
         if (!splashScreen || splashScreen.classList.contains("hidden") || splashScreen.classList.contains("is-hiding")) {
@@ -1687,6 +1688,32 @@ export function initialize3DApp() {
         renderer.render(scene, camera);
         setActiveMenuButton(null);
     }
+
+    async function preloadAppScreensDuringSplash() {
+        if (hasRunSplashPreload || !splashScreen || splashScreen.classList.contains("hidden")) {
+            return;
+        }
+
+        hasRunSplashPreload = true;
+
+        try {
+            openProfileScreen();
+            await Promise.resolve();
+            openChallengesScreen();
+            await Promise.resolve();
+            openSettingsScreen();
+            await Promise.resolve();
+        } catch {
+            // Ignore warm-up failures; normal navigation will still work.
+        } finally {
+            closeSettings();
+            closeChallengesScreen();
+            closeProfileScreen();
+            toggleMenu(false);
+            setActiveMenuButton(null);
+            shouldRenderScene = true;
+        }
+    }
     
     function isChallengesScreenOpen() {
         return !!challengesScreen && !challengesScreen.classList.contains("hidden");
@@ -2159,18 +2186,22 @@ export function initialize3DApp() {
     setupHeroCardListeners();
     setTimeout(setupHeroCardListeners, 100);
     
+    function openSettingsScreen() {
+        closeProfileScreen();
+        toggleMenu(false);
+        setActiveMenuButton(settingsBtn);
+        document.getElementById("settingsOverlay").classList.remove("hidden");
+        document.getElementById("settingsScreen").classList.remove("hidden");
+    }
+
     if (settingsBtn) {
         settingsBtn.onclick = () => {
             const isOpen = !document.getElementById("settingsScreen").classList.contains("hidden");
-            closeProfileScreen();
     
             if (isOpen) {
                 closeSettings();
             } else {
-                toggleMenu(false);
-                setActiveMenuButton(settingsBtn);
-                document.getElementById("settingsOverlay").classList.remove("hidden");
-                document.getElementById("settingsScreen").classList.remove("hidden");
+                openSettingsScreen();
             }
         };
     }

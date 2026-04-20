@@ -22,5 +22,24 @@
     width: min(180px, 36vw);
     height: min(180px, 36vw);
     object-fit: contain;
+    opacity: 0.9;
+    animation: splashIconOpacityPulse 1.2s ease-in-out infinite;
+}
+
+#splashScreen.is-hiding #splashIcon {
+    animation: none;
+    opacity: 1;
+}
+
+@keyframes splashIconOpacityPulse {
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
 }
 
