@@ -9,7 +9,7 @@
   position: fixed;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: none;
   z-index: 10020;
   width: 340px;
   padding: 0;
@@ -24,7 +24,7 @@
   position: relative;
   background: #fff;
   border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  box-shadow: none;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -64,7 +64,7 @@
   object-fit: cover;
   background: #fff;
   border: 2px solid #eee;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  box-shadow: none;
 }
 .add-challenge-modal-username {
   font-family: "Founders Grotesk Text", sans-serif;
@@ -134,9 +134,9 @@
   background: rgba(255,255,255,0.35);
   border-radius: 12px;
   position: relative;
-  transition: background 0.28s ease, box-shadow 0.28s ease;
+  transition: background 0.28s ease;
   display: inline-block;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.32);
+  /* box-shadow removed */
 }
 .add-challenge-modal-switch input {
   display: none;
@@ -149,7 +149,7 @@
   height: 18px;
   background: #fff;
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  box-shadow: none;
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.28s ease;
   transform: translateX(0);
 }
@@ -158,11 +158,11 @@
   background: #ffd600;
 }
 .add-challenge-modal-switch input:checked + .add-challenge-modal-switch-slider {
-  box-shadow: 0 1px 6px rgba(224,171,15,0.55);
+  box-shadow: none;
 }
 .add-challenge-modal-switch:has(input:checked) {
   background: rgba(224,171,15,0.55);
-  box-shadow: inset 0 0 0 1px rgba(224,171,15,0.65);
+  box-shadow: none;
 }
 .add-challenge-modal-save {
   position: static;

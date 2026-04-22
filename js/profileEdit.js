@@ -143,7 +143,6 @@ function openCropModal(file) {
 
 export function setupProfileEdit({ onSaved }) {
     const profileScreen   = document.getElementById('profileScreen');
-    const editBtn         = document.getElementById('profileEditBtn');
     const saveBtn         = document.getElementById('profileSaveBtn');
     const saveMsg         = document.getElementById('profileSaveMsg');
     const nameHeading     = document.getElementById('profileNameHeading');
@@ -151,7 +150,18 @@ export function setupProfileEdit({ onSaved }) {
     const avatarImg       = document.querySelector('.profile-hero-avatar');
     const fileInput       = document.getElementById('avatarFileInput');
 
-    if (!editBtn || !saveBtn || !nameHeading || !avatarImg || !fileInput) return;
+    if (!saveBtn || !nameHeading || !avatarImg || !fileInput) return;
+
+    let editBtn = document.getElementById('profileEditBtn');
+    if (!editBtn) {
+        editBtn = document.createElement('button');
+        editBtn.id = 'profileEditBtn';
+        editBtn.className = 'profile-edit-gear';
+        editBtn.setAttribute('aria-label', 'Edit profile');
+        editBtn.setAttribute('title', 'Edit profile');
+        editBtn.innerHTML = '<img src="assets/images/Edit icon.png" alt="">';
+        nameHeading.appendChild(editBtn);
+    }
 
     let pendingAvatarDataUrl = null;
 

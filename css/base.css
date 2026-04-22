@@ -102,10 +102,7 @@ body {
     --hotbar-surface:
         linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(0, 0, 0, 0.12) 100%),
         url("../assets/images/metal sheet.jpeg") center center / cover no-repeat;
-    --hotbar-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        inset 0 -8px 12px rgba(0, 0, 0, 0.18),
-        0 5px 10px rgba(0, 0, 0, 0.08);
+    --hotbar-shadow: none;
     --profile-yellow: #f4d900;
     --profile-page-surface:
         url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
@@ -113,7 +110,7 @@ body {
         url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
     --profile-stripe-surface:
         url("../assets/images/yellow striped texture.jpg") center center / cover no-repeat;
-    --profile-card-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+    --profile-card-shadow: none;
     --profile-summary-main-offset-x: 30px;
 }
 
@@ -128,7 +125,7 @@ button {
     border: 2px solid #000000;
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s ease, box-shadow 0.15s ease;
+    transition: background 0.15s ease;
     font-family: "Founders Grotesk Mono", monospace;
     font-weight: 700;
     font-style: normal;
@@ -150,7 +147,6 @@ button:focus-visible,
 #zoomSlider:focus-visible,
 .modal-field input:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 1.5px #000000;
 }
 
 /* Left menu */
@@ -223,6 +219,7 @@ body.profile-open #removeTagBtn {
     background:
         linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(0,0,0,0.18) 100%),
         url("../assets/images/Dark metal sheet.jpg") center center / cover no-repeat;
-    box-shadow: var(--hotbar-shadow), 0 0 0 1.5px #000000;
+    /* box-shadow removed */
+}
 }
 

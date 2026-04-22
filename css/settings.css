@@ -1,3 +1,9 @@
+/* Remove all box-shadow and text-shadow from settings.css */
+* {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+}
 /* Settings screen */
 #settingsScreen {
     position: fixed;

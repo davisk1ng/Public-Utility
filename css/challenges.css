@@ -14,7 +14,7 @@
         width: 100%;
         margin: 0;
         border-radius: 0 0 0 0;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+        /* box-shadow removed */
     }
 
     /* Rotate chain dividers to match white chains (45deg) */
@@ -25,7 +25,7 @@
     }
 }
 /* --- Mobile-first improvements for daily challenges page --- */
-@media (max-width: 600px) {
+/* Removed misplaced box-shadow and filter lines that caused CSS errors */
     .challenges-top-row {
         flex-direction: column;
         gap: 10px;
@@ -40,7 +40,7 @@
         width: 100%;
         margin: 0 0 10px 0;
         border-radius: 0 0 0 18px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+        box-shadow: none;
     }
 
     .challenges-panel-shell {
@@ -128,7 +128,7 @@
     object-fit: cover;
     background: #fff;
     border: 2px solid #eee;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    /* box-shadow removed */
 }
 .challenge-card-username {
     font-family: "Founders Grotesk Text", sans-serif;
@@ -189,9 +189,7 @@
     contain: layout paint;
     will-change: transform;
     min-height: 0;
-    box-shadow:
-        0 18px 34px rgba(0, 0, 0, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    /* box-shadow removed */
     overflow-y: auto;
 }
 
@@ -257,10 +255,7 @@
     background-position: center;
     color: #111;
     text-align: center;
-    box-shadow:
-        0 30px 34px rgba(0, 0, 0, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.5),
-        inset 0 -6px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: none;
     overflow: hidden;
 }
 
@@ -286,12 +281,12 @@
 
 .leaderboard-rank-arrow.up {
     color: #4ade4a;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
 }
 
 .leaderboard-rank-arrow.down {
     color: #ff5555;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
 }
 
 .leaderboard-card-rank {
@@ -300,7 +295,7 @@
     font-weight: 700;
     letter-spacing: -0.03em;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
 }
 
 .leaderboard-card-name {
@@ -309,7 +304,7 @@
     font-weight: 600;
     margin-top: 2px;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
 }
 
 .leaderboard-card-links {
@@ -318,7 +313,7 @@
     font-weight: 700;
     margin-top: 4px;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
 }
 
 /* ─── Daily Challenges Header (yellow box) ─── */
@@ -331,7 +326,10 @@
     justify-content: center;
     padding: clamp(16px, 2vw, 24px) clamp(18px, 2vw, 28px);
     border-radius: 0 0 0 32px;
-    background: #E0AB0F;
+    background: url(../assets/images/Smooth\ Dark\ Steel.jpeg);
+    background-size: cover;
+    background-position: center;
+
     color: #fff;
     text-align: center;
     position: fixed;
@@ -403,7 +401,9 @@
     align-items: center;
     justify-content: flex-start;
     padding-top: 48px;
-    gap: 0;
+        filter: brightness(1) invert(1);
+        opacity: 1;
+        box-shadow: none !important;
     overflow: hidden;
 }
 
@@ -430,8 +430,7 @@
 .challenges-column.col-in-progress {
     background: #292927;
     border-radius: 16px;
-    box-shadow:
-        0 30px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: none;
 }
 
 .challenges-column.col-in-progress .challenges-column-header {
@@ -456,22 +455,22 @@
     margin: 0;
     border: none;
     border-radius: 16px;
-    background: #E0AB0F;
+    background: url(../assets/images/metal\ sheet.jpeg);
+    background-size: cover;
+    background-position: center;
     color: #fff;
     font-size: clamp(28px, 3.2vw, 42px);
     font-weight: 700;
     font-family: "Founders Grotesk Text", sans-serif;
     cursor: pointer;
-    box-shadow:
-        0 30px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: none;
     transition: filter 0.15s ease;
 }
 
 .challenges-add-btn:hover {
     filter: brightness(1.08);
     background: #E0AB0F;
-    box-shadow:
-        0 30px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: none;
 }
 
 /* ─── Challenge Cards ─── */
@@ -481,8 +480,7 @@
     gap: 0;
     border-radius: 16px;
     background: #fff;
-    box-shadow:
-        0 30px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: none;
     overflow: hidden;
 }
 

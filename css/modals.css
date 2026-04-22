@@ -22,7 +22,7 @@
     border-radius: 7px;
     padding: 24px;
     width: min(360px, calc(100vw - 32px));
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     font-family: "Founders Grotesk Mono", monospace;
     font-weight: 400;
     font-style: normal;
@@ -124,7 +124,7 @@
     background: #1a1a1a;
     border-radius: 16px;
     padding: 20px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -167,7 +167,7 @@
     position: absolute;
     inset: 0;
     border-radius: 24px;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    /* box-shadow removed */
     pointer-events: none;
 }
 
