@@ -264,7 +264,7 @@
 }
 
 .leaderboard-card.silver {
-    background-image: url("../assets/images/metal sheet.jpeg");
+    background-image: url("../assets/images/metal%20sheet.jpeg");
 }
 
 .leaderboard-card.copper {

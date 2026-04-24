@@ -101,7 +101,7 @@ body {
     --hotbar-border-width: 3px;
     --hotbar-surface:
         linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(0, 0, 0, 0.12) 100%),
-        url("../assets/images/metal sheet.jpeg") center center / cover no-repeat;
+        url("../assets/images/metal%20sheet.jpeg") center center / cover no-repeat;
     --hotbar-shadow: none;
     --profile-yellow: #f4d900;
     --profile-page-surface:

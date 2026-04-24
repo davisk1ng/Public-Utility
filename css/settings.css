@@ -46,7 +46,7 @@
     transform: translateX(-50%);
     top: auto;
     z-index: 1005;
-    background: url(/assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
+    background: url(../assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
     border: none;
     font-size: 1rem;
     cursor: pointer;
@@ -84,7 +84,7 @@
 #settingsBody button {
     position: static;
     justify-content: center;
-    background: url(/assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
+    background: url(../assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
     border: none;
     width: 60%;
 }
