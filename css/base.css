@@ -109,7 +109,7 @@ body {
     --profile-metal-surface:
         url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
     --profile-stripe-surface:
-        url("../assets/images/yellow striped texture.jpg") center center / cover no-repeat;
+        url("../assets/images/yellow striped texture.png");
     --profile-card-shadow: none;
     --profile-summary-main-offset-x: 30px;
 }

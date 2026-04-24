@@ -107,7 +107,7 @@ body {
     --profile-metal-surface:
         url("../assets/images/Light Metal gradient.jpeg") center center / cover no-repeat;
     --profile-stripe-surface:
-        url("../assets/images/yellow striped texture.jpg") center center / cover no-repeat;
+        url("../assets/images/yellow striped texture.png");
     --profile-card-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
     --profile-summary-main-offset-x: 30px;
 }
@@ -145,8 +145,6 @@ button {
     z-index: 2;
     padding: 12px 24px;
     margin-right: 10px;
-    background: #ffffff;
-    border: 2px solid #000000;
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.15s ease, box-shadow 0.15s ease;
@@ -765,7 +763,7 @@ body.profile-open #removeTagBtn {
     width: 56px;
     height: 56px;
     border-radius: 16px;
-    background: url("../assets/images/yellow striped texture.jpg") left top / 60px 60px repeat;
+    background: url("../assets/images/yellow striped texture.png") left top / 60px 60px repeat;
     opacity: 0;
     pointer-events: none;
     z-index: 1;
@@ -781,7 +779,7 @@ body.profile-open #removeTagBtn {
     right: 6px;
     height: 56px;
     border-radius: 16px;
-    background: url("../assets/images/yellow striped texture.jpg") left top / 60px 60px repeat;
+    background: url("../assets/images/yellow striped texture.png") left top / 60px 60px repeat;
     opacity: 0;
     pointer-events: none;
     z-index: 1;

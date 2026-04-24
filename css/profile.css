@@ -519,7 +519,7 @@
     width: 56px;
     height: 56px;
     border-radius: 16px;
-    background: url("../assets/images/yellow striped texture.jpg") left top / 60px 60px repeat;
+    background: url("../assets/images/yellow striped texture.png") left top / 100px 100px repeat;
     opacity: 0;
     pointer-events: none;
     z-index: 1;
@@ -535,7 +535,7 @@
     right: 6px;
     height: 56px;
     border-radius: 16px;
-    background: url("../assets/images/yellow striped texture.jpg") left top / 60px 60px repeat;
+    background: url("../assets/images/yellow striped texture.png") left top / 100px 100px repeat;
     opacity: 0;
     pointer-events: none;
     z-index: 1;

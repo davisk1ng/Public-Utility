@@ -21,71 +21,6 @@ const CHALLENGE_STATE_STORAGE_KEY_PREFIX = "challengeStateV2";
 let availableChallenges = [];
 let inProgressChallenges = [];
 let challengeStorageUserId = null;
-let challengeRemoteSyncTimeoutId = null;
-let pendingChallengeRemoteState = null;
-
-async function fetchRemoteChallengeState(userId) {
-    if (!userId || userId === "anonymous") {
-        return null;
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("challenge_state")
-            .eq("id", userId)
-            .maybeSingle();
-
-        if (error) {
-            console.warn("Challenge remote state read failed:", error.message || error);
-            return null;
-        }
-
-        const remoteState = data?.challenge_state;
-        return remoteState && typeof remoteState === "object" ? remoteState : null;
-    } catch (error) {
-        console.warn("Challenge remote state read exception:", error?.message || error);
-        return null;
-    }
-}
-
-async function flushChallengeStateToRemote() {
-    if (!challengeStorageUserId || challengeStorageUserId === "anonymous" || !pendingChallengeRemoteState) {
-        return;
-    }
-
-    const stateToPersist = pendingChallengeRemoteState;
-    pendingChallengeRemoteState = null;
-
-    try {
-        const { error } = await supabase
-            .from("profiles")
-            .update({ challenge_state: stateToPersist })
-            .eq("id", challengeStorageUserId);
-        if (error) {
-            console.warn("Challenge remote state write failed:", error.message || error);
-        }
-    } catch (error) {
-        console.warn("Challenge remote state write exception:", error?.message || error);
-    }
-}
-
-function scheduleChallengeStateRemoteSync(state) {
-    if (!challengeStorageUserId || challengeStorageUserId === "anonymous") {
-        return;
-    }
-
-    pendingChallengeRemoteState = state;
-
-    if (challengeRemoteSyncTimeoutId) {
-        window.clearTimeout(challengeRemoteSyncTimeoutId);
-    }
-
-    challengeRemoteSyncTimeoutId = window.setTimeout(() => {
-        challengeRemoteSyncTimeoutId = null;
-        void flushChallengeStateToRemote();
-    }, 400);
-}
 
 function normalizeStoredChallenge(challenge) {
     if (!challenge || typeof challenge !== "object") {
@@ -140,14 +75,7 @@ function getStoredChallengeState(userId) {
 
 async function loadChallengeStateForCurrentUser() {
     const userId = await ensureChallengeStorageUser();
-    const localStored = getStoredChallengeState(userId);
-    const remoteStored = await fetchRemoteChallengeState(userId);
-    const stored = remoteStored || localStored;
-
-    if (remoteStored) {
-        localStorage.setItem(getChallengeStorageKey(userId), JSON.stringify(remoteStored));
-    }
-
+    const stored = getStoredChallengeState(userId);
     const nonDaily = Array.isArray(stored?.availableNonDaily)
         ? stored.availableNonDaily.map(normalizeStoredChallenge).filter(Boolean)
         : [];
@@ -199,13 +127,10 @@ function persistChallengeState(dateKey) {
         .map(normalizeStoredChallenge)
         .filter(Boolean);
 
-    const challengeState = { dateKey, remainingDailyIds, availableNonDaily, inProgress };
-
     localStorage.setItem(
         getChallengeStorageKey(challengeStorageUserId),
-        JSON.stringify(challengeState)
+        JSON.stringify({ dateKey, remainingDailyIds, availableNonDaily, inProgress })
     );
-    scheduleChallengeStateRemoteSync(challengeState);
 }
 
 function ensureDailyChallengesForToday() {
@@ -564,37 +489,6 @@ let dogTagManager = null;
 let chainInteraction = null;
 let cachedJoinedAt = null;
 
-function addDogTagWithTitle(title) {
-    const setStatusFn = typeof window.setStatus === "function" ? window.setStatus : null;
-    if (!dogTagManager.hasAssets()) {
-        if (setStatusFn) {
-            setStatusFn("Dog tag assets are still loading.");
-        }
-        return;
-    }
-    const addLinkFn = typeof window.addLink === "function" ? window.addLink : null;
-    if (!addLinkFn) {
-        if (setStatusFn) {
-            setStatusFn("Chain is still loading. Please try again.");
-        }
-        return;
-    }
-    addLinkFn();
-    dogTagManager.prependTag(title, 0);
-    const updateViewFn = typeof window.updateDogTagViewMode === "function" ? window.updateDogTagViewMode : null;
-    if (updateViewFn) {
-        updateViewFn();
-    }
-    if (!isRestoring) {
-        const saveFn = typeof window.saveChain === "function" ? window.saveChain : null;
-        if (saveFn) {
-            saveFn();
-        }
-    }
-}
-// Make globally available after definition
-window.addDogTagWithTitle = addDogTagWithTitle;
-
 export function initialize3DApp() {
     // Cache the user's real join date directly from the auth session
 
@@ -654,7 +548,6 @@ export function initialize3DApp() {
     
     const canvas = document.getElementById("chainCanvas");
     const statusMessage = document.getElementById("statusMessage");
-    const dogTagHint = document.getElementById("dogTagHint");
     const zoomSlider = document.getElementById("zoomSlider");
     const splashScreen = document.getElementById("splashScreen");
     const removeTagBtn = document.getElementById("removeTagBtn");
@@ -753,8 +646,6 @@ export function initialize3DApp() {
     let isTouchScrolling = false;
     let activeTouchScrollId = null;
     let lastTouchClientY = 0;
-    let dogTagHintFadeTimeoutId = null;
-    const dogTagHintStorageKey = "dogTagHintSeen";
     
     window.addEventListener("error", (event) => {
         const message = event.error?.message || event.message || "Unknown runtime error";
@@ -782,28 +673,7 @@ export function initialize3DApp() {
         splashScreen.classList.add("is-hiding");
         window.setTimeout(() => {
             splashScreen.classList.add("hidden");
-            showDogTagHintOnce();
         }, 700);
-    }
-
-    function showDogTagHintOnce() {
-        if (!dogTagHint || localStorage.getItem(dogTagHintStorageKey) === "1") {
-            return;
-        }
-
-        dogTagHint.classList.remove("hidden", "is-fading");
-        localStorage.setItem(dogTagHintStorageKey, "1");
-
-        if (dogTagHintFadeTimeoutId) {
-            window.clearTimeout(dogTagHintFadeTimeoutId);
-        }
-
-        dogTagHintFadeTimeoutId = window.setTimeout(() => {
-            dogTagHint.classList.add("is-fading");
-            window.setTimeout(() => {
-                dogTagHint.classList.add("hidden");
-            }, 700);
-        }, 10000);
     }
     
     function applyMenuState() {
@@ -929,27 +799,18 @@ export function initialize3DApp() {
             setStatus(font ? "Chain and dog tag models loaded." : "Chain and dog tag models loaded (font unavailable, using canvas text).");
     
             if (!(await restoreChain())) {
-                addDogTagWithTitle("I joined Hyperlink!");
+                addLink();
             }
-            setCameraToChainOverview();
+
+            resetCameraToLaunchView();
     
             hideSplashScreen();
         } catch (error) {
             console.error("Failed to load assets", error);
             const details = error?.message || error?.toString?.() || "Unknown asset error";
             setStatus(`Failed to load 3D assets: ${details}`);
-            setCameraToChainOverview();
             hideSplashScreen();
         }
-    }
-
-    function setCameraToChainOverview() {
-        updateZoomLimits();
-        updateCameraVerticalLimits();
-        camera.position.z = zoomMaxZ;
-        camera.position.y = THREE.MathUtils.clamp((cameraMinY + cameraMaxY) / 2, cameraMinY, cameraMaxY);
-        camera.lookAt(0, camera.position.y, 0);
-        syncZoomSlider();
     }
     
     function loadModel(url) {
@@ -1079,6 +940,16 @@ export function initialize3DApp() {
         camera.position.y = THREE.MathUtils.clamp(camera.position.y, cameraMinY, cameraMaxY);
         camera.lookAt(0, camera.position.y, 0);
     }
+
+    function resetCameraToLaunchView() {
+        // Start fully zoomed out and centered so the chain framing is predictable.
+        updateZoomLimits();
+        updateCameraVerticalLimits();
+        camera.position.z = zoomMaxZ;
+        camera.position.y = (cameraMinY + cameraMaxY) * 0.5;
+        camera.lookAt(0, camera.position.y, 0);
+        syncZoomSlider();
+    }
     
     function onMouseWheel(event) {
         if (chainLinks.length === 0) {
@@ -1131,7 +1002,22 @@ export function initialize3DApp() {
             saveChain();
         }
     }
-    window.addLink = addLink;
+    
+    function addDogTagWithTitle(title) {
+        if (!dogTagManager.hasAssets()) {
+            setStatus("Dog tag assets are still loading.");
+            return;
+        }
+    
+        addLink();
+    
+        dogTagManager.prependTag(title, 0);
+        updateDogTagViewMode();
+    
+        if (!isRestoring) {
+            saveChain();
+        }
+    }
     
     function removeLink() {
         if (chainLinks.length === 0) {
@@ -1172,7 +1058,6 @@ export function initialize3DApp() {
             statusMessage.style.display = "block";
         }
     }
-    window.setStatus = setStatus;
     
     function onWindowResize() {
         syncAppHeight();
@@ -1567,7 +1452,7 @@ export function initialize3DApp() {
     
         // Set the name text without destroying the edit button child
         const displayName = localStorage.getItem("profileDisplayName") || "Your Name";
-        const editBtnEl = document.getElementById('profileEditBtn') || profileNameHeading.querySelector('.profile-edit-gear');
+        const editBtnEl = profileNameHeading.querySelector('.profile-edit-gear');
         profileNameHeading.textContent = displayName;
         if (editBtnEl) profileNameHeading.appendChild(editBtnEl);
     
@@ -1609,7 +1494,6 @@ export function initialize3DApp() {
             heroCard.style.transform = 'translateX(120%)';
 
             if (isYou || !card) {
-                resetProfileEditUiState();
                 currentViewingUserId = null;
                 updateProfileScreen();
                 profileScreen?.classList.remove('is-viewing-other');
@@ -1617,7 +1501,6 @@ export function initialize3DApp() {
                 if (profileActions) profileActions.classList.add('hidden');
                 if (friendStatusTag) { friendStatusTag.classList.add('hidden'); friendStatusTag.innerHTML = ''; }
             } else {
-                resetProfileEditUiState();
                 const userId = card.getAttribute('data-user-id') || '';
                 currentViewingUserId = userId || null;
                 const name = card.getAttribute('data-name') || 'Unknown';
@@ -1627,7 +1510,7 @@ export function initialize3DApp() {
                 const friendAvatar = card.querySelector('.friend-avatar img')?.src;
 
                 if (profileNameHeading) {
-                    const editBtn = document.getElementById('profileEditBtn') || profileNameHeading.querySelector('.profile-edit-gear');
+                    const editBtn = profileNameHeading.querySelector('.profile-edit-gear');
                     profileNameHeading.textContent = name;
                     if (editBtn) profileNameHeading.appendChild(editBtn);
                 }
@@ -1691,34 +1574,6 @@ export function initialize3DApp() {
             friendsEmptyState.classList.toggle("hidden", visibleCount > 0);
         }
     }
-
-    function resetProfileEditUiState() {
-        if (!profileScreen) {
-            return;
-        }
-
-        profileScreen.classList.remove("edit-mode");
-
-        if (profileNameHeading) {
-            profileNameHeading.contentEditable = "false";
-        }
-
-        const editBtn = document.getElementById("profileEditBtn");
-        if (editBtn) {
-            editBtn.style.display = "";
-        }
-
-        const saveBtn = document.getElementById("profileSaveBtn");
-        if (saveBtn) {
-            saveBtn.classList.add("hidden");
-            saveBtn.disabled = false;
-        }
-
-        const saveMsg = document.getElementById("profileSaveMsg");
-        if (saveMsg) {
-            saveMsg.textContent = "";
-        }
-    }
     
     function openProfileScreen() {
         if (!profileScreen) {
@@ -1728,7 +1583,6 @@ export function initialize3DApp() {
         closeSettings();
         closeEchoModal();
         closeChallengesScreen();
-        resetProfileEditUiState();
         currentViewingUserId = null;
         updateProfileScreen();
         profileScreen.classList.remove("hidden");
@@ -1768,7 +1622,6 @@ export function initialize3DApp() {
             return;
         }
     
-        resetProfileEditUiState();
         profileScreen.classList.add("hidden");
         document.body.classList.remove("profile-open");
         // Hide fixed notification UI
@@ -1795,33 +1648,6 @@ export function initialize3DApp() {
         renderChallenges();
     }
     
-    const LEADERBOARD_TREND_STORAGE_KEY = "leaderboardTrendStateV1";
-    const LEADERBOARD_TREND_DURATION_MS = 24 * 60 * 60 * 1000;
-
-    function loadLeaderboardTrendState() {
-        try {
-            const parsed = JSON.parse(localStorage.getItem(LEADERBOARD_TREND_STORAGE_KEY) || "null");
-            if (!parsed || typeof parsed !== "object") {
-                return { lastOrder: [], indicators: {} };
-            }
-
-            const lastOrder = Array.isArray(parsed.lastOrder)
-                ? parsed.lastOrder.filter((id) => typeof id === "string")
-                : [];
-            const indicators = parsed.indicators && typeof parsed.indicators === "object"
-                ? parsed.indicators
-                : {};
-
-            return { lastOrder, indicators };
-        } catch {
-            return { lastOrder: [], indicators: {} };
-        }
-    }
-
-    function saveLeaderboardTrendState(state) {
-        localStorage.setItem(LEADERBOARD_TREND_STORAGE_KEY, JSON.stringify(state));
-    }
-
     async function populateLeaderboard() {
         const container = document.querySelector('.leaderboard-cards');
         if (!container) return;
@@ -1831,40 +1657,23 @@ export function initialize3DApp() {
             .order('chain_count', { ascending: false })
             .limit(3);
         if (error || !data) return;
-        const now = Date.now();
-        const trendState = loadLeaderboardTrendState();
-        const prevOrder = trendState.lastOrder;
+        // Get previous leaderboard order from window
+        const prevOrder = window.lastLeaderboardOrder || [];
         const newOrder = data.map(p => p?.id || null);
-        const cleanedIndicators = {};
-
-        Object.entries(trendState.indicators || {}).forEach(([id, marker]) => {
-            if (!marker || typeof marker !== "object") return;
-            if ((marker.direction !== "up" && marker.direction !== "down") || typeof marker.expiresAt !== "number") return;
-            if (marker.expiresAt > now) {
-                cleanedIndicators[id] = marker;
-            }
-        });
-
-        // Compute and store fresh rank changes for 24h.
-        if (prevOrder.length > 0) {
+        // Compute rank changes
+        let rankChange = [0, 0, 0]; // 1=up, -1=down, 0=same/new
+        if (prevOrder.length === 3) {
             for (let i = 0; i < 3; ++i) {
                 const id = newOrder[i];
                 if (!id) continue;
                 const prevIdx = prevOrder.indexOf(id);
                 if (prevIdx === -1) continue; // new to leaderboard
-                if (prevIdx > i) {
-                    cleanedIndicators[id] = { direction: "up", expiresAt: now + LEADERBOARD_TREND_DURATION_MS };
-                } else if (prevIdx < i) {
-                    cleanedIndicators[id] = { direction: "down", expiresAt: now + LEADERBOARD_TREND_DURATION_MS };
-                }
+                if (prevIdx > i) rankChange[i] = 1; // moved up
+                else if (prevIdx < i) rankChange[i] = -1; // moved down
             }
         }
-
-        saveLeaderboardTrendState({
-            lastOrder: newOrder.filter((id) => typeof id === "string"),
-            indicators: cleanedIndicators,
-        });
-
+        // Save new order for next time
+        window.lastLeaderboardOrder = newOrder;
         // Update cards
         const cards = container.querySelectorAll('.leaderboard-card');
         cards.forEach((card, i) => {
@@ -1879,9 +1688,8 @@ export function initialize3DApp() {
             if (profile) {
                 if (rankEl) rankEl.textContent = `${i + 1}. ${profile.username ?? 'Unknown'}`;
                 if (linksEl) linksEl.textContent = `${profile.chain_count ?? 0} Links`;
-                const marker = cleanedIndicators[profile.id];
-                if (marker?.direction === "up" && marker.expiresAt > now && arrowUp) arrowUp.style.display = '';
-                if (marker?.direction === "down" && marker.expiresAt > now && arrowDown) arrowDown.style.display = '';
+                if (rankChange[i] === 1 && arrowUp) arrowUp.style.display = '';
+                if (rankChange[i] === -1 && arrowDown) arrowDown.style.display = '';
             } else {
                 if (rankEl) rankEl.textContent = `${i + 1}. —`;
                 if (linksEl) linksEl.textContent = '0 Links';
@@ -2372,7 +2180,6 @@ export function initialize3DApp() {
             }
         }
     }
-    window.updateDogTagViewMode = updateDogTagViewMode;
     
     const setupHeroCardListeners = () => {
         const closeBtn = document.getElementById("closeHeroPreview");
@@ -2538,7 +2345,6 @@ export function initialize3DApp() {
         updateProfileScreen();
         syncChainCount();
     }
-    window.saveChain = saveChain;
 
     async function syncChainCount() {
         const { data: { user } } = await supabase.auth.getUser();

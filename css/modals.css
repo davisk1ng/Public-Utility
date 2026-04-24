@@ -17,9 +17,8 @@
 }
 
 .modal-content {
-    background: #ffffff;
-    border: 2px solid #000000;
-    border-radius: 7px;
+    background: url(../assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
+    border-radius: 16px;
     padding: 24px;
     width: min(360px, calc(100vw - 32px));
     box-shadow: none;
@@ -36,9 +35,13 @@
 }
 
 .modal-field label {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     font-size: 17px;
+    padding: 10px 0;
     margin-bottom: 6px;
-    color: #111;
+    color: #000000;
     font-family: "Founders Grotesk Mono", monospace;
     font-weight: 400;
     font-style: normal;
@@ -46,7 +49,7 @@
 
 .modal-field input {
     padding: 10px 12px;
-    border: 1px solid #000000;
+    border: none;
     border-radius: 5px;
     font-size: 17px;
     font-family: "Founders Grotesk Mono", monospace;
@@ -81,7 +84,7 @@
 
 .modal-field textarea {
     padding: 10px 12px;
-    border: 1px solid #000000;
+    border: none;
     border-radius: 5px;
     font-size: 17px;
     min-height: 140px;
@@ -94,6 +97,7 @@
 
 .modal-buttons {
     display: flex;
+    border: none;
     gap: 12px;
     justify-content: flex-start;
     margin-top: 18px;
@@ -269,8 +273,9 @@
     position: static;
     padding: 10px 19px;
     margin-right: 0;
-    background: #ffffff;
-    border: 2px solid #000000;
+    background: url("../assets/images/Smooth\ Dark\ Steel.jpeg") center center / cover no-repeat;
+    border: none;
+    color: #ffffff;
     border-radius: 5px;
     cursor: pointer;
     font-size: 17px;

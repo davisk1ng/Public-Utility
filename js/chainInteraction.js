@@ -25,6 +25,8 @@ export class ChainInteraction {
         this.motionDamping = 0.94;
         // Positive Y here is intentionally opposite earth gravity for this effect.
         this.gravityStrength = 0.01;
+        this.idleSwayStrength = 0.00085;
+        this.idleSwayFrequency = 0.0018;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -61,6 +63,7 @@ export class ChainInteraction {
 
         const previousPoints = this.chainPoints.map((point) => point.clone());
         const lastIndex = this.chainPoints.length - 1;
+        const swayTime = performance.now() * this.idleSwayFrequency;
 
         for (let i = 0; i < lastIndex; i += 1) {
             if (i === this.draggingIndex) {
@@ -69,6 +72,12 @@ export class ChainInteraction {
 
             this.chainVelocities[i].multiplyScalar(this.motionDamping);
             this.chainVelocities[i].y += this.gravityStrength;
+            if (this.draggingIndex < 0) {
+                // Subtle idle sway advertises that the chain can be dragged.
+                const linkWeight = 1 - i / Math.max(lastIndex, 1);
+                const phaseOffset = i * 0.42;
+                this.chainVelocities[i].x += Math.sin(swayTime + phaseOffset) * this.idleSwayStrength * linkWeight;
+            }
             this.chainPoints[i].add(this.chainVelocities[i]);
             this.chainPoints[i].z = 0;
         }

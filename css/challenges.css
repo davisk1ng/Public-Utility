@@ -113,7 +113,7 @@
         font-size: 1em;
         padding: 10px 0;
     }
-}
+
 /* Challenge card profile row */
 .challenge-card-profile {
     display: flex;
@@ -326,7 +326,7 @@
     justify-content: center;
     padding: clamp(16px, 2vw, 24px) clamp(18px, 2vw, 28px);
     border-radius: 0 0 0 32px;
-    background: url(../assets/images/Smooth\ Dark\ Steel.jpeg);
+    background: url(../assets/images/darkMetalSheet.jpg);
     background-size: cover;
     background-position: center;
 
@@ -428,7 +428,7 @@
 
 /* ─── In Progress Column (charcoal) ─── */
 .challenges-column.col-in-progress {
-    background: #292927;
+    background: url(../assets/images/Smooth\ Dark\ Steel.jpeg) center/cover;
     border-radius: 16px;
     box-shadow: none;
 }
@@ -469,7 +469,7 @@
 
 .challenges-add-btn:hover {
     filter: brightness(1.08);
-    background: #E0AB0F;
+    background: url(../assets/images/darkMetalSheet.jpg) center/cover;
     box-shadow: none;
 }
 
@@ -479,7 +479,7 @@
     flex-direction: column;
     gap: 0;
     border-radius: 16px;
-    background: #fff;
+    background: #f8f8f8;
     box-shadow: none;
     overflow: hidden;
 }
@@ -534,7 +534,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: filter 0.15s ease;
-    background: #E0AB0F;
+    background: url(../assets/images/darkMetalSheet.jpg) center/cover;
     color: #fff;
     box-shadow: none;
 }
@@ -542,7 +542,7 @@
 .challenge-finish-btn:hover,
 .challenge-giveup-btn:hover {
     filter: brightness(1.1);
-    background: #E0AB0F;
+    background: url(../assets/images/darkMetalSheet.jpg) center/cover;
     box-shadow: none;
 }
 
@@ -563,7 +563,7 @@
     font-weight: 700;
     cursor: pointer;
     transition: filter 0.15s ease;
-    background: #222;
+    background: url(../assets/images/darkMetalSheet.jpg) center/cover;
     color: #fff;
     border-radius: 0;
     box-shadow: none;
@@ -580,7 +580,7 @@
 .challenge-accept-btn:hover,
 .challenge-deny-btn:hover {
     filter: brightness(1.3);
-    background: #222;
+    background: url(../assets/images/Smooth\ Dark\ Steel.jpeg) center/cover;
     box-shadow: none;
 }
 
