@@ -21,6 +21,7 @@ const CHALLENGE_STATE_STORAGE_KEY_PREFIX = "challengeStateV2";
 let availableChallenges = [];
 let inProgressChallenges = [];
 let challengeStorageUserId = null;
+let addDogTagFromChallenge = null;
 
 function normalizeStoredChallenge(challenge) {
     if (!challenge || typeof challenge !== "object") {
@@ -436,7 +437,11 @@ function openAddChallengeModal() {
             persistChallengeState(getTodayChallengeKey());
 
             // Finishing a challenge turns it into a new chain dog tag.
-            addDogTagWithTitle(completed.text);
+            if (typeof addDogTagFromChallenge === "function") {
+                addDogTagFromChallenge(completed.text);
+            } else {
+                console.warn("Challenge finish: dog tag handler is not ready yet.");
+            }
             renderChallenges();
         };
     });
@@ -1018,6 +1023,9 @@ export function initialize3DApp() {
             saveChain();
         }
     }
+
+    // Expose chain insertion to module-level challenge handlers.
+    addDogTagFromChallenge = addDogTagWithTitle;
     
     function removeLink() {
         if (chainLinks.length === 0) {
@@ -2309,6 +2317,11 @@ export function initialize3DApp() {
     }
     
     document.getElementById("resetChainBtn").onclick = () => {
+        const confirmed = window.confirm("Reset chain length to 1 link? This removes all current links and dog tags.");
+        if (!confirmed) {
+            return;
+        }
+
         for (const link of chainLinks) {
             scene.remove(link);
         }

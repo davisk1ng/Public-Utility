@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Hyperlink
     </title>
-    <link rel="icon" type="image/png" href="assets/images/chain white icon.png">
-    <link rel="apple-touch-icon" href="assets/images/App logo.png">
+    <link rel="icon" type="image/png" href="assets/images/chain%20white%20icon.png">
+    <link rel="apple-touch-icon" href="assets/images/App%20logo.png">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="https://use.typekit.net/csj6fho.css">
     <link rel="stylesheet" href="css/base.css">
@@ -50,7 +50,9 @@
                 #authContainer a { color: #888 !important; text-decoration: underline; cursor: pointer; }
                 #authContainer a:hover { color: #444 !important; }
                 .auth-action-btn {
-                    background: url('assets/images/metal%20sheet.jpeg') center center / cover no-repeat;
+                     background-image: url("../assets/images/metal sheet.jpeg");
+                    background-size: cover;
+                    background-position: center;
                     color: #111;
                     font-size: 1.2rem;
                     padding: 0.8rem 0;
@@ -69,7 +71,7 @@
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             display: flex;
-            background: url(assets/images/metal\ sheet.jpeg);
+            background: url(assets/images/metal%20sheet.jpeg);
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -77,7 +79,9 @@
             z-index: 10000;
         }
         #authContainer form {
-            background: url(/assets/images/metal\ sheet.jpeg) center center / cover no-repeat;
+            background-image: url("../assets/images/metal sheet.jpeg");
+            background-size: cover;
+            background-position: center;
             border-radius: 10px;
             box-shadow: 0 2px 16px rgba(0,0,0,0.08);
             padding: 2rem 2.5rem;
@@ -96,7 +100,7 @@
             left: auto;
             padding: 0.5rem;
             border-radius: 5px;
-            background: url(/assets/images/Smooth\ Dark\ Steel.jpeg) center center / cover no-repeat;
+            background: url(assets/images/Smooth%20Dark%20Steel.jpeg) center center / cover no-repeat;
             color: white;
             font-weight: bold;
             cursor: pointer;

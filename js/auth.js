@@ -34,6 +34,10 @@ export function setupAuth({ onAuthenticated }) {
         if (session?.user) {
             const username = session.user.user_metadata?.username || session.user.email;
             setAuthenticated(username);
+        } else {
+            // No session: show login, hide main UI
+            authContainer.classList.remove("hidden");
+            mainUiContainer.classList.add("hidden");
         }
     });
 
@@ -93,7 +97,9 @@ export function setupAuth({ onAuthenticated }) {
 
         if (deleteAccountBtn) {
             deleteAccountBtn.onclick = async () => {
-                const confirmed = confirm("Are you sure you want to delete your account? This cannot be undone.");
+                const confirmed = window.confirm(
+                    "Delete your account permanently? This will erase your profile and cannot be undone."
+                );
                 if (!confirmed) return;
                 const { error } = await supabase.rpc("delete_user");
                 if (error) {
